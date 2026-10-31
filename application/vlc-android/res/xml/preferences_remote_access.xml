@@ -56,4 +56,11 @@
                 android:title="@string/remote_access_logs" />
 
     </PreferenceCategory>
+    <PreferenceCategory android:title="@string/remote_access_ai_category">
+        <Preference
+                android:dependency="enable_remote_access"
+                android:key="ai_access"
+                android:summary="@string/remote_access_ai_summary"
+                android:title="@string/remote_access_ai_title" />
+    </PreferenceCategory>
 </androidx.preference.PreferenceScreen>

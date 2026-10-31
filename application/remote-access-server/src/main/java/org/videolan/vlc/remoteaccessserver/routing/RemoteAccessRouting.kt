@@ -65,4 +65,16 @@ fun Route.setupRouting(appContext: Context, scope: CoroutineScope) {
         authenticatedFileRouting(appContext, scope, settings)
         authenticatedCommonRouting(appContext, settings)
     }
+
+    // JSON API for non-browser clients (MCP bridge), bearer token, HTTPS only
+    authenticate("api_token") {
+        intercept(ApplicationCallPipeline.Call) {
+            val server = RemoteAccessServer.getInstance(appContext)
+            if (!RemoteAccessServer.byPassAuth && !server.isHttpsPort(call.request.local.serverPort)) {
+                call.respond(HttpStatusCode.Forbidden)
+                finish()
+            }
+        }
+        apiRouting(appContext, scope, settings)
+    }
 }

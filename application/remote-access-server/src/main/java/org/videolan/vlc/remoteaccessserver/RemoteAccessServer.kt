@@ -48,6 +48,8 @@ import io.ktor.server.application.ApplicationStopped
 import io.ktor.server.application.createApplicationPlugin
 import io.ktor.server.application.install
 import io.ktor.server.auth.Authentication
+import io.ktor.server.auth.UserIdPrincipal
+import io.ktor.server.auth.bearer
 import io.ktor.server.auth.session
 import io.ktor.server.engine.applicationEngineEnvironment
 import io.ktor.server.engine.connector
@@ -575,6 +577,12 @@ class RemoteAccessServer(private val context: Context) : PlaybackService.Callbac
                     }
                 }
                 install(Authentication) {
+                    bearer("api_token") {
+                        realm = "VLC Remote Access API"
+                        authenticate { credential ->
+                            if (RemoteAccessApiTokens.validate(Settings.getInstance(context), credential.token)) UserIdPrincipal("api") else null
+                        }
+                    }
                     session<UserSession>("user_session") {
                         validate { session ->
                             session
@@ -827,6 +835,25 @@ class RemoteAccessServer(private val context: Context) : PlaybackService.Callbac
             }
                     ?: 0
         }
+    }
+
+    /** The HTTPS port the server is listening on, or null if the server is not running. */
+    fun httpsPort(): Int? =
+        if (::engine.isInitialized) engine.environment.connectors.firstOrNull { it.type.name == "HTTPS" }?.port else null
+
+    /**
+     * SHA-256 fingerprint of the server's self-signed certificate (colon separated hex), used by API clients to pin it.
+     */
+    fun certificateFingerprintSha256(): String? = try {
+        val keyStoreFile = File(context.filesDir.path, ".keystore")
+        val store = KeyStore.getInstance("BKS", "BC")
+        keyStoreFile.inputStream().use { store.load(it, "store_pass".toCharArray()) }
+        store.getCertificate("vlc-android")?.let { cert ->
+            java.security.MessageDigest.getInstance("SHA-256").digest(cert.encoded).joinToString(":") { "%02X".format(it) }
+        }
+    } catch (e: Exception) {
+        Log.e(TAG, "Cannot read the certificate fingerprint", e)
+        null
     }
 
     /**

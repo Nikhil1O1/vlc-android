@@ -22,6 +22,7 @@
  */
 package org.videolan.vlc.gui.preferences
 
+import android.content.ComponentName
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
@@ -112,6 +113,10 @@ class PreferencesRemoteAccess : BasePreferenceFragment(), SharedPreferences.OnSh
     }
 
     override fun onPreferenceTreeClick(preference: Preference): Boolean {
+        if (preference.key == "ai_access") {
+            requireActivity().startActivity(Intent().apply { component = ComponentName(requireActivity(), "org.videolan.vlc.remoteaccessserver.gui.remoteaccess.AiAccessActivity") })
+            return true
+        }
         if (preference.key == "remote_access_status") {
             requireActivity().startActivity(Intent(requireActivity(), StartActivity::class.java).apply { action = "vlc.remoteaccess.share" })
         }

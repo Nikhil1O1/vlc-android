@@ -45,6 +45,9 @@
                 android:name=".gui.remoteaccess.RemoteAccessShareActivity"
                 android:theme="@style/Theme.VLC"/>
         <activity
+                android:name=".gui.remoteaccess.AiAccessActivity"
+                android:theme="@style/Theme.VLC"/>
+        <activity
                 android:name=".gui.remoteaccess.onboarding.RemoteAccessOnboardingActivity"
                 android:theme="@style/Theme.VLC.Onboarding"/>
     </application>
