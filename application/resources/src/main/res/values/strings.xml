@@ -1450,4 +1450,17 @@
     <string name="remote_access_ai_category">AI access (MCP)</string>
     <string name="remote_access_ai_title">AI access tokens</string>
     <string name="remote_access_ai_summary">Let Claude Desktop, Claude Code and other MCP clients manage your music with the vlc-mcp helper</string>
+    <!-- Music player -->
+    <string name="music_player_category">Music player</string>
+    <string name="music_player_style">Player style</string>
+    <string name="music_classic_player">Classic player</string>
+    <string name="music_classic_player_summary">Use the original VLC audio player instead of the new Now Playing screen</string>
+    <string name="music_style_normal">Normal</string>
+    <string name="music_style_full_cover">Full cover</string>
+    <string name="music_style_gradient">Gradient</string>
+    <string name="music_style_expressive">Expressive</string>
+    <string name="music_queue">Queue</string>
+    <string name="music_repeat">Repeat</string>
+    <string name="music_options">Options</string>
+    <string name="music_reorder">Reorder</string>
 </resources>

@@ -728,4 +728,16 @@
         <item>@string/report_a_crash</item>
     </string-array>
 
+    <string-array name="music_player_style_entries">
+        <item>@string/music_style_normal</item>
+        <item>@string/music_style_full_cover</item>
+        <item>@string/music_style_gradient</item>
+        <item>@string/music_style_expressive</item>
+    </string-array>
+    <string-array name="music_player_style_values">
+        <item>normal</item>
+        <item>full_cover</item>
+        <item>gradient</item>
+        <item>expressive</item>
+    </string-array>
 </resources>

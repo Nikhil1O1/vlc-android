@@ -41,6 +41,25 @@
         android:title="@string/confirm_resume_audio_title"/>
 
     <PreferenceCategory
+            android:title="@string/music_player_category"
+            android:key="music_player_category">
+        <CheckBoxPreference
+                app:singleLineTitle="false"
+                android:defaultValue="false"
+                android:key="music_classic_player"
+                android:summary="@string/music_classic_player_summary"
+                android:title="@string/music_classic_player"/>
+        <ListPreference
+                app:singleLineTitle="false"
+                android:defaultValue="expressive"
+                android:key="music_player_style"
+                android:entries="@array/music_player_style_entries"
+                android:entryValues="@array/music_player_style_values"
+                android:summary="%s"
+                android:title="@string/music_player_style"/>
+    </PreferenceCategory>
+
+    <PreferenceCategory
             android:title="@string/headset_prefs_category"
             android:key="headset_prefs_category">
         <CheckBoxPreference

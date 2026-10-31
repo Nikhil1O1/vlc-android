@@ -170,11 +170,11 @@ private fun Header(state: NowPlayingUiState, actions: NowPlayingActions) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
         IconButton(onClick = actions.onTogglePlayer) { Icon(Icons.Filled.KeyboardArrowDown, null) }
         Box {
-            IconButton(onClick = { menu = true }) { Icon(Icons.Filled.Palette, "Player style") }
+            IconButton(onClick = { menu = true }) { Icon(Icons.Filled.Palette, stringResource(R.string.music_player_style)) }
             DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                 NowPlayingStyle.entries.forEach { s ->
                     DropdownMenuItem(
-                        text = { Text(s.label, fontWeight = if (s == state.style) FontWeight.Bold else FontWeight.Normal) },
+                        text = { Text(stringResource(s.labelRes), fontWeight = if (s == state.style) FontWeight.Bold else FontWeight.Normal) },
                         onClick = { menu = false; actions.onStyle(s) },
                     )
                 }
@@ -270,10 +270,10 @@ private fun Transport(state: NowPlayingUiState, actions: NowPlayingActions) {
 private fun Chips(state: NowPlayingUiState, actions: NowPlayingActions, onQueue: () -> Unit) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
         val repeating = state.repeatMode != PlaybackStateCompat.REPEAT_MODE_NONE
-        ChipToggle(if (state.repeatMode == PlaybackStateCompat.REPEAT_MODE_ONE) Icons.Filled.RepeatOne else Icons.Filled.Repeat, "Repeat", repeating, actions.onRepeat)
+        ChipToggle(if (state.repeatMode == PlaybackStateCompat.REPEAT_MODE_ONE) Icons.Filled.RepeatOne else Icons.Filled.Repeat, stringResource(R.string.music_repeat), repeating, actions.onRepeat)
         ChipToggle(Icons.Filled.Shuffle, stringResource(R.string.shuffle), state.shuffling, actions.onShuffle)
-        ChipToggle(Icons.Filled.QueueMusic, "Queue", false, onQueue)
-        ChipToggle(Icons.Filled.VolumeUp, "Volume", false, actions.onVolume)
-        ChipToggle(Icons.Filled.Tune, "Options", false, actions.onOptions)
+        ChipToggle(Icons.Filled.QueueMusic, stringResource(R.string.music_queue), false, onQueue)
+        ChipToggle(Icons.Filled.VolumeUp, stringResource(R.string.volume), false, actions.onVolume)
+        ChipToggle(Icons.Filled.Tune, stringResource(R.string.music_options), false, actions.onOptions)
     }
 }

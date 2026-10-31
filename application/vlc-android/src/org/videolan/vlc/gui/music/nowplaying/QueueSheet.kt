@@ -28,7 +28,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import org.videolan.vlc.R
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
@@ -40,7 +42,7 @@ fun QueueSheet(state: NowPlayingUiState, actions: NowPlayingActions, onDismiss: 
         val reorder = rememberReorderableLazyListState(listState) { from, to -> actions.onMoveQueueItem(from.index, to.index) }
         LaunchedEffect(Unit) { if (state.currentIndex > 0) listState.scrollToItem(state.currentIndex) }
         Column {
-            Text("Queue", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp))
+            Text(stringResource(R.string.music_queue), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp))
             LazyColumn(state = listState) {
                 itemsIndexed(state.queue, key = { index, item -> System.identityHashCode(item) * 31 + index }) { index, item ->
                     ReorderableItem(reorder, key = System.identityHashCode(item) * 31 + index) {
@@ -57,8 +59,8 @@ fun QueueSheet(state: NowPlayingUiState, actions: NowPlayingActions, onDismiss: 
                                 Text(item.title.orEmpty(), maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = if (current) FontWeight.Bold else FontWeight.Normal)
                                 Text(item.artistName.orEmpty(), maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
-                            IconButton(onClick = { actions.onRemoveQueueItem(index) }) { Icon(Icons.Filled.Close, "Remove") }
-                            IconButton(onClick = {}, modifier = Modifier.draggableHandle()) { Icon(Icons.Filled.DragHandle, "Reorder") }
+                            IconButton(onClick = { actions.onRemoveQueueItem(index) }) { Icon(Icons.Filled.Close, stringResource(R.string.remove)) }
+                            IconButton(onClick = {}, modifier = Modifier.draggableHandle()) { Icon(Icons.Filled.DragHandle, stringResource(R.string.music_reorder)) }
                         }
                     }
                 }

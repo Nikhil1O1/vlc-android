@@ -39,6 +39,7 @@ import kotlinx.coroutines.launch
 import org.videolan.resources.VLCInstance
 import org.videolan.tools.KEY_AUDIO_DIGITAL_OUTPUT
 import org.videolan.tools.KEY_AUDIO_PREFERRED_LANGUAGE
+import org.videolan.tools.KEY_MUSIC_CLASSIC_PLAYER
 import org.videolan.tools.KEY_AUDIO_REPLAY_GAIN_DEFAULT
 import org.videolan.tools.KEY_AUDIO_REPLAY_GAIN_ENABLE
 import org.videolan.tools.KEY_AUDIO_REPLAY_GAIN_MODE
@@ -148,6 +149,7 @@ class PreferencesAudio : BasePreferenceFragment(), SharedPreferences.OnSharedPre
         when (key) {
             KEY_AUDIO_DIGITAL_OUTPUT -> updatePassThroughSummary()
             KEY_AUDIO_PREFERRED_LANGUAGE -> updatePreferredAudioTrack()
+            KEY_MUSIC_CLASSIC_PLAYER -> UiTools.restartDialog(requireActivity())
             KEY_AUDIO_REPLAY_GAIN_ENABLE, KEY_AUDIO_REPLAY_GAIN_MODE, KEY_AUDIO_REPLAY_GAIN_PEAK_PROTECTION -> lifecycleScope.launch { restartLibVLC() }
             KEY_AUDIO_REPLAY_GAIN_DEFAULT, KEY_AUDIO_REPLAY_GAIN_PREAMP -> {
                 val defValue = if (key == KEY_AUDIO_REPLAY_GAIN_DEFAULT) "-7.0" else "0.0"

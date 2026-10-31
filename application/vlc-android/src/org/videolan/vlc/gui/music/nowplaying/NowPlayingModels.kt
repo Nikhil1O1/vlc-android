@@ -1,14 +1,16 @@
 package org.videolan.vlc.gui.music.nowplaying
 
+import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
 import org.videolan.medialibrary.interfaces.media.MediaWrapper
+import org.videolan.vlc.R
 
 /** The look of the full now playing screen. Persisted by [key] under KEY_MUSIC_PLAYER_STYLE. */
-enum class NowPlayingStyle(val key: String, val label: String) {
-    Normal("normal", "Normal"),
-    FullCover("full_cover", "Full cover"),
-    Gradient("gradient", "Gradient"),
-    Expressive("expressive", "Expressive");
+enum class NowPlayingStyle(val key: String, @StringRes val labelRes: Int) {
+    Normal("normal", R.string.music_style_normal),
+    FullCover("full_cover", R.string.music_style_full_cover),
+    Gradient("gradient", R.string.music_style_gradient),
+    Expressive("expressive", R.string.music_style_expressive);
 
     companion object {
         fun fromKey(key: String?) = entries.firstOrNull { it.key == key } ?: Expressive
