@@ -1,12 +1,15 @@
 package org.videolan.vlc.gui.music.nowplaying
 
+import android.media.AudioManager
 import android.os.Bundle
+import android.support.v4.media.session.PlaybackStateCompat
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.produceState
@@ -16,9 +19,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.content.getSystemService
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Dispatchers
+import org.videolan.tools.KEY_MUSIC_PLAYER_STYLE
+import org.videolan.tools.Settings
+import org.videolan.tools.putSingle
 import kotlinx.coroutines.launch
 import org.videolan.medialibrary.interfaces.media.MediaWrapper
 import org.videolan.vlc.PlaybackService
@@ -46,6 +54,7 @@ class NowPlayingFragment : Fragment(), AudioPlayerHost {
     override val bookmarkModel: BookmarkModel by lazy(LazyThreadSafetyMode.NONE) { BookmarkModel.get(requireActivity()) }
 
     private var slideOffset by mutableFloatStateOf(0f)
+    private var playerStyle by mutableStateOf(NowPlayingStyle.Expressive)
     private var sheetState by mutableIntStateOf(0)
     private var optionsDelegate: PlayerOptionsDelegate? = null
     private var bookmarkListDelegate: BookmarkListDelegate? = null
@@ -55,6 +64,7 @@ class NowPlayingFragment : Fragment(), AudioPlayerHost {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        playerStyle = NowPlayingStyle.fromKey(Settings.getInstance(requireContext()).getString(KEY_MUSIC_PLAYER_STYLE, null))
         view.findViewById<ComposeView>(R.id.now_playing_compose).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent { NowPlayingContent() }
@@ -66,26 +76,67 @@ class NowPlayingFragment : Fragment(), AudioPlayerHost {
         val dark = isSystemInDarkTheme()
         val state by playlistModel.playerState.observeAsState()
         val progress by playlistModel.progress.observeAsState()
+        val queue by playlistModel.dataset.observeAsState()
+        var tick by remember { mutableIntStateOf(0) }
         val media: MediaWrapper? = remember(state) { playlistModel.currentMediaWrapper }
         val artwork = media?.artworkMrl
+        var favorite by remember(media) { mutableStateOf(media?.isFavorite == true) }
         val scheme by produceState(fallbackColorScheme(dark), artwork, dark) {
             value = CoverColorRepository.scheme(artwork, dark)
         }
-        MusicTheme(scheme.animated()) {
-            NowPlayingScreen(
-                title = state?.title ?: media?.title,
-                artist = state?.artist ?: media?.artistName,
-                artworkMrl = artwork,
-                playing = state?.playing == true,
-                timeMs = progress?.time ?: 0L,
-                lengthMs = progress?.length ?: 0L,
-                slide = slideOffset,
+        val ui = NowPlayingUiState(
+            title = state?.title ?: media?.title,
+            artist = state?.artist ?: media?.artistName,
+            album = media?.albumName,
+            artworkMrl = artwork,
+            playing = state?.playing == true,
+            timeMs = progress?.time ?: 0L,
+            lengthMs = progress?.length ?: 0L,
+            queue = queue ?: emptyList(),
+            currentIndex = remember(state, queue) { playlistModel.currentMediaPosition },
+            repeatMode = remember(state, tick) { playlistModel.repeatType },
+            shuffling = remember(state, tick) { playlistModel.shuffling },
+            favorite = favorite,
+            style = playerStyle,
+        )
+        val actions = remember {
+            NowPlayingActions(
                 onTogglePlayer = { (activity as? AudioPlayerContainerActivity)?.slideUpOrDownAudioPlayer() },
                 onPlayPause = { onPlayPauseClick(null) },
                 onNext = { onNextClick(null) },
                 onPrevious = { onPreviousClick(null) },
                 onSeek = { playlistModel.setTime(it) },
+                onPlayIndex = { playlistModel.play(it) },
+                onRepeat = {
+                    playlistModel.repeatType = when (playlistModel.repeatType) {
+                        PlaybackStateCompat.REPEAT_MODE_NONE -> PlaybackStateCompat.REPEAT_MODE_ALL
+                        PlaybackStateCompat.REPEAT_MODE_ALL -> PlaybackStateCompat.REPEAT_MODE_ONE
+                        else -> PlaybackStateCompat.REPEAT_MODE_NONE
+                    }
+                    tick++
+                },
+                onShuffle = { playlistModel.shuffle(); tick++ },
+                onFavorite = {
+                    val m = playlistModel.currentMediaWrapper ?: return@NowPlayingActions
+                    val new = !m.isFavorite
+                    favorite = new
+                    lifecycleScope.launch(Dispatchers.IO) { m.isFavorite = new }
+                },
+                onOptions = { showAdvancedOptions(null) },
+                onVolume = {
+                    requireContext().getSystemService<AudioManager>()
+                        ?.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_SAME, AudioManager.FLAG_SHOW_UI)
+                },
+                onStyle = { style ->
+                    playerStyle = style
+                    Settings.getInstance(requireContext()).putSingle(KEY_MUSIC_PLAYER_STYLE, style.key)
+                },
+                onMoveQueueItem = { from, to -> playlistModel.move(from, to) },
+                onRemoveQueueItem = { playlistModel.remove(it) },
             )
+        }
+        MusicTheme(scheme.animated()) {
+            NowPlayingScreen(ui, actions, slideOffset)
         }
     }
 

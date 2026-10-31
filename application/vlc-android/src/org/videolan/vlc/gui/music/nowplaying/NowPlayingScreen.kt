@@ -1,7 +1,7 @@
 package org.videolan.vlc.gui.music.nowplaying
 
-import android.graphics.Bitmap
-import androidx.compose.foundation.Image
+import android.os.Build
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -10,198 +10,270 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.QueueMusic
+import androidx.compose.material.icons.filled.Repeat
+import androidx.compose.material.icons.filled.RepeatOne
+import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
-import androidx.compose.material3.FilledIconButton
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import android.support.v4.media.session.PlaybackStateCompat
+import kotlinx.coroutines.flow.drop
 import org.videolan.medialibrary.Tools
 import org.videolan.vlc.R
-import org.videolan.vlc.gui.helpers.AudioUtil
 
 private val MiniHeight = 72.dp
 
 @Composable
-fun NowPlayingScreen(
-    title: String?,
-    artist: String?,
-    artworkMrl: String?,
-    playing: Boolean,
-    timeMs: Long,
-    lengthMs: Long,
-    slide: Float,
-    onTogglePlayer: () -> Unit,
-    onPlayPause: () -> Unit,
-    onNext: () -> Unit,
-    onPrevious: () -> Unit,
-    onSeek: (Long) -> Unit,
-) {
+fun NowPlayingScreen(state: NowPlayingUiState, actions: NowPlayingActions, slide: Float) {
     val miniAlpha = (1f - slide * 2.5f).coerceIn(0f, 1f)
     val fullAlpha = ((slide - 0.25f) / 0.75f).coerceIn(0f, 1f)
-    Box(
-        Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surfaceContainer)
+    CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
+        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceContainer)) {
+            if (fullAlpha > 0f) FullPlayer(state, actions, Modifier.alpha(fullAlpha))
+            if (miniAlpha > 0f) MiniPlayer(state, actions, Modifier.alpha(miniAlpha))
+        }
+    }
+}
+
+@Composable
+private fun MiniPlayer(state: NowPlayingUiState, actions: NowPlayingActions, modifier: Modifier = Modifier) {
+    Row(
+        modifier.fillMaxWidth().height(MiniHeight).clickable(onClick = actions.onTogglePlayer).padding(horizontal = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (fullAlpha > 0f) {
-            FullPlayer(
-                title, artist, artworkMrl, playing, timeMs, lengthMs, onTogglePlayer, onPlayPause, onNext, onPrevious, onSeek,
-                Modifier.alpha(fullAlpha)
+        Cover(state.artworkMrl, Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)), 128)
+        Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
+            Text(state.title.orEmpty(), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(state.artist.orEmpty(), style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Box(Modifier.size(52.dp), contentAlignment = Alignment.Center) {
+            val fraction = if (state.lengthMs > 0) (state.timeMs.toFloat() / state.lengthMs).coerceIn(0f, 1f) else 0f
+            CircularProgressIndicator(progress = { fraction }, modifier = Modifier.size(48.dp), strokeWidth = 3.dp)
+            IconButton(onClick = actions.onPlayPause) {
+                Icon(if (state.playing) Icons.Filled.Pause else Icons.Filled.PlayArrow, stringResource(if (state.playing) R.string.pause else R.string.play))
+            }
+        }
+        IconButton(onClick = actions.onNext) { Icon(Icons.Filled.SkipNext, stringResource(R.string.next)) }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun FullPlayer(state: NowPlayingUiState, actions: NowPlayingActions, modifier: Modifier = Modifier) {
+    var showQueue by remember { mutableStateOf(false) }
+    val style = state.style
+    val scheme = MaterialTheme.colorScheme
+    Box(modifier.fillMaxSize()) {
+        // ---- background ----
+        when (style) {
+            NowPlayingStyle.Expressive -> {
+                val blurModifier = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) Modifier.blur(36.dp) else Modifier
+                Cover(state.artworkMrl, Modifier.fillMaxSize().then(blurModifier).alpha(0.55f), 64)
+                Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, scheme.surface.copy(alpha = 0.85f)))))
+            }
+            NowPlayingStyle.Gradient -> Box(
+                Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(scheme.primaryContainer, scheme.surfaceContainer, scheme.surface)))
+            )
+            NowPlayingStyle.Normal, NowPlayingStyle.FullCover -> Unit
+        }
+
+        // ---- full-bleed cover for the Full cover style ----
+        if (style == NowPlayingStyle.FullCover) {
+            Box(Modifier.fillMaxWidth().fillMaxHeight(0.68f)) {
+                CoverPager(state, actions, Modifier.fillMaxSize(), corner = 0, spacing = 0)
+                Box(
+                    Modifier.fillMaxSize().background(
+                        Brush.verticalGradient(0.55f to Color.Transparent, 1f to scheme.surfaceContainer)
+                    )
+                )
+            }
+        }
+
+        Column(Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 24.dp, vertical = 8.dp)) {
+            Header(state, actions)
+            when (style) {
+                NowPlayingStyle.FullCover -> Spacer(Modifier.weight(1f))
+                else -> {
+                    Spacer(Modifier.weight(0.25f))
+                    val corner = if (style == NowPlayingStyle.Expressive) 36 else 24
+                    CoverPager(state, actions, Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(corner.dp)), corner = corner)
+                    Spacer(Modifier.weight(0.25f))
+                }
+            }
+            InfoRow(state, actions, centered = style == NowPlayingStyle.Gradient)
+            Spacer(Modifier.height(12.dp))
+            Seek(state, actions)
+            Spacer(Modifier.height(8.dp))
+            Transport(state, actions)
+            Spacer(Modifier.height(20.dp))
+            Chips(state, actions, onQueue = { showQueue = true })
+            Spacer(Modifier.height(12.dp))
+        }
+    }
+    if (showQueue) QueueSheet(state, actions, onDismiss = { showQueue = false })
+}
+
+@Composable
+private fun Header(state: NowPlayingUiState, actions: NowPlayingActions) {
+    var menu by remember { mutableStateOf(false) }
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        IconButton(onClick = actions.onTogglePlayer) { Icon(Icons.Filled.KeyboardArrowDown, null) }
+        Box {
+            IconButton(onClick = { menu = true }) { Icon(Icons.Filled.Palette, "Player style") }
+            DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                NowPlayingStyle.entries.forEach { s ->
+                    DropdownMenuItem(
+                        text = { Text(s.label, fontWeight = if (s == state.style) FontWeight.Bold else FontWeight.Normal) },
+                        onClick = { menu = false; actions.onStyle(s) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun CoverPager(state: NowPlayingUiState, actions: NowPlayingActions, modifier: Modifier, corner: Int, spacing: Int = 16) {
+    val queue = state.queue
+    if (queue.isEmpty() || state.currentIndex !in queue.indices) {
+        Cover(state.artworkMrl, modifier, 720)
+        return
+    }
+    val size by rememberUpdatedState(queue.size)
+    val current by rememberUpdatedState(state.currentIndex)
+    val playIndex by rememberUpdatedState(actions.onPlayIndex)
+    val pager = rememberPagerState(initialPage = state.currentIndex) { size }
+    LaunchedEffect(state.currentIndex) {
+        if (pager.currentPage != state.currentIndex) pager.scrollToPage(state.currentIndex)
+    }
+    LaunchedEffect(pager) {
+        snapshotFlow { pager.settledPage }.drop(1).collect { if (it != current) playIndex(it) }
+    }
+    HorizontalPager(pager, modifier, pageSpacing = spacing.dp, beyondViewportPageCount = 1, key = { System.identityHashCode(queue.getOrNull(it)) + it }) { page ->
+        Cover(queue.getOrNull(page)?.artworkMrl, Modifier.fillMaxSize().clip(RoundedCornerShape(corner.dp)), 720, ContentScale.Crop)
+    }
+}
+
+@Composable
+private fun InfoRow(state: NowPlayingUiState, actions: NowPlayingActions, centered: Boolean) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f), horizontalAlignment = if (centered) Alignment.CenterHorizontally else Alignment.Start) {
+            Text(
+                state.title.orEmpty(), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, maxLines = 1,
+                overflow = TextOverflow.Ellipsis, textAlign = if (centered) TextAlign.Center else TextAlign.Start, modifier = Modifier.fillMaxWidth()
+            )
+            val sub = listOfNotNull(state.artist?.takeIf { it.isNotBlank() }, state.album?.takeIf { it.isNotBlank() }).joinToString(" • ")
+            Text(
+                sub, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = if (centered) TextAlign.Center else TextAlign.Start,
+                modifier = Modifier.fillMaxWidth()
             )
         }
-        if (miniAlpha > 0f) {
-            MiniPlayer(
-                title, artist, artworkMrl, playing, timeMs, lengthMs, onTogglePlayer, onPlayPause, onNext,
-                Modifier.alpha(miniAlpha)
-            )
+        Spacer(Modifier.size(8.dp))
+        Row(Modifier.clip(RoundedCornerShape(24.dp)).background(MaterialTheme.colorScheme.surfaceVariant)) {
+            IconButton(onClick = actions.onFavorite) {
+                Icon(if (state.favorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder, null, tint = if (state.favorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            IconButton(onClick = actions.onOptions) { Icon(Icons.Filled.MoreVert, null) }
         }
     }
 }
 
 @Composable
-private fun MiniPlayer(
-    title: String?, artist: String?, artworkMrl: String?, playing: Boolean, timeMs: Long, lengthMs: Long,
-    onClick: () -> Unit, onPlayPause: () -> Unit, onNext: () -> Unit, modifier: Modifier = Modifier,
-) {
-    Column(modifier.fillMaxWidth().height(MiniHeight).clickable(onClick = onClick)) {
-        val fraction = if (lengthMs > 0) (timeMs.toFloat() / lengthMs).coerceIn(0f, 1f) else 0f
-        LinearProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxWidth().height(2.dp))
-        Row(
-            Modifier.fillMaxWidth().weight(1f).padding(horizontal = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Cover(artworkMrl, Modifier.size(48.dp).clip(RoundedCornerShape(8.dp)), 128)
-            Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
-                Text(title.orEmpty(), style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(
-                    artist.orEmpty(), style = MaterialTheme.typography.bodySmall, maxLines = 1,
-                    overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            IconButton(onClick = onPlayPause) {
-                Icon(
-                    if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                    contentDescription = stringResource(if (playing) R.string.pause else R.string.play)
-                )
-            }
-            IconButton(onClick = onNext) { Icon(Icons.Filled.SkipNext, stringResource(R.string.next)) }
-        }
-    }
-}
-
-@Composable
-private fun FullPlayer(
-    title: String?, artist: String?, artworkMrl: String?, playing: Boolean, timeMs: Long, lengthMs: Long,
-    onClose: () -> Unit, onPlayPause: () -> Unit, onNext: () -> Unit, onPrevious: () -> Unit, onSeek: (Long) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
-            IconButton(onClick = onClose) { Icon(Icons.Filled.KeyboardArrowDown, null) }
-        }
-        Spacer(Modifier.weight(0.4f))
-        Cover(artworkMrl, Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(24.dp)), 720)
-        Spacer(Modifier.weight(0.4f))
-        Text(
-            title.orEmpty(), style = MaterialTheme.typography.headlineSmall, maxLines = 1,
-            overflow = TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth()
-        )
-        Text(
-            artist.orEmpty(), style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis,
-            color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(Modifier.height(16.dp))
-        SeekBar(timeMs, lengthMs, onSeek)
-        Spacer(Modifier.height(8.dp))
-        Row(
-            Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onPrevious, modifier = Modifier.size(56.dp)) {
-                Icon(Icons.Filled.SkipPrevious, stringResource(R.string.previous), Modifier.size(36.dp))
-            }
-            FilledIconButton(onClick = onPlayPause, modifier = Modifier.size(80.dp)) {
-                Icon(
-                    if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                    stringResource(if (playing) R.string.pause else R.string.play), Modifier.size(44.dp)
-                )
-            }
-            IconButton(onClick = onNext, modifier = Modifier.size(56.dp)) {
-                Icon(Icons.Filled.SkipNext, stringResource(R.string.next), Modifier.size(36.dp))
-            }
-        }
-        Spacer(Modifier.weight(0.6f))
-    }
-}
-
-@Composable
-private fun SeekBar(timeMs: Long, lengthMs: Long, onSeek: (Long) -> Unit) {
-    var dragging by remember { mutableStateOf<Float?>(null) }
-    val value = dragging ?: if (lengthMs > 0) (timeMs.toFloat() / lengthMs).coerceIn(0f, 1f) else 0f
+private fun Seek(state: NowPlayingUiState, actions: NowPlayingActions) {
+    var dragFraction by remember { mutableStateOf<Float?>(null) }
+    val fraction = if (state.lengthMs > 0) (state.timeMs.toFloat() / state.lengthMs).coerceIn(0f, 1f) else 0f
     Column(Modifier.fillMaxWidth()) {
-        Slider(
-            value = value,
-            onValueChange = { dragging = it },
-            onValueChangeFinished = {
-                dragging?.let { onSeek((it * lengthMs).toLong()) }
-                dragging = null
-            },
-            enabled = lengthMs > 0,
+        WavySeekBar(
+            value = fraction, playing = state.playing, enabled = state.lengthMs > 0,
+            onFinished = { actions.onSeek((it * state.lengthMs).toLong()) },
+            onDragging = { dragFraction = it },
         )
         Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-            val shown = dragging?.let { (it * lengthMs).toLong() } ?: timeMs
-            Text(Tools.millisToString(shown), style = MaterialTheme.typography.labelMedium)
-            Text(Tools.millisToString(lengthMs), style = MaterialTheme.typography.labelMedium)
+            val shown = dragFraction?.let { (it * state.lengthMs).toLong() } ?: state.timeMs
+            Text(Tools.millisToString(shown), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(Tools.millisToString(state.lengthMs), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
 
 @Composable
-private fun Cover(artworkMrl: String?, modifier: Modifier, pixelWidth: Int) {
-    val bitmap by produceState<Bitmap?>(null, artworkMrl) {
-        value = if (artworkMrl.isNullOrEmpty()) null
-        else withContext(Dispatchers.IO) { AudioUtil.readCoverBitmap(artworkMrl, pixelWidth) }
-    }
-    Box(modifier.background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
-        val bmp = bitmap
-        if (bmp != null) {
-            Image(bmp.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-        } else {
-            Icon(Icons.Filled.MusicNote, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+private fun Transport(state: NowPlayingUiState, actions: NowPlayingActions) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
+        FilledTonalIconButton(onClick = actions.onPrevious, modifier = Modifier.size(64.dp)) {
+            Icon(Icons.Filled.SkipPrevious, stringResource(R.string.previous), Modifier.size(30.dp))
         }
+        CookiePlayButton(
+            playing = state.playing, onClick = actions.onPlayPause,
+            icon = if (state.playing) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+            description = stringResource(if (state.playing) R.string.pause else R.string.play),
+        )
+        FilledTonalIconButton(onClick = actions.onNext, modifier = Modifier.size(64.dp)) {
+            Icon(Icons.Filled.SkipNext, stringResource(R.string.next), Modifier.size(30.dp))
+        }
+    }
+}
+
+@Composable
+private fun Chips(state: NowPlayingUiState, actions: NowPlayingActions, onQueue: () -> Unit) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+        val repeating = state.repeatMode != PlaybackStateCompat.REPEAT_MODE_NONE
+        ChipToggle(if (state.repeatMode == PlaybackStateCompat.REPEAT_MODE_ONE) Icons.Filled.RepeatOne else Icons.Filled.Repeat, "Repeat", repeating, actions.onRepeat)
+        ChipToggle(Icons.Filled.Shuffle, stringResource(R.string.shuffle), state.shuffling, actions.onShuffle)
+        ChipToggle(Icons.Filled.QueueMusic, "Queue", false, onQueue)
+        ChipToggle(Icons.Filled.VolumeUp, "Volume", false, actions.onVolume)
+        ChipToggle(Icons.Filled.Tune, "Options", false, actions.onOptions)
     }
 }
