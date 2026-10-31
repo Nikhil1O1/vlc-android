@@ -15,7 +15,7 @@ and an API your AI assistant can use to manage your library.**
 &nbsp;
 <img src="docs/screenshots/music-visualizer-ring.png" alt="Now Playing with the pulsing ring visualizer" width="230">
 &nbsp;
-<img src="docs/screenshots/music-hollywood-playlist.png" alt="A playlist with cover art" width="230">
+<img src="docs/screenshots/music-playlist.png" alt="A playlist with cover art" width="230">
 
 </div>
 
