@@ -49,11 +49,13 @@ class SubtitleStyleDialog : VLCBottomSheetDialogFragment() {
     private lateinit var shadowSwitch: SwitchCompat
     private lateinit var positionBar: SeekBar
 
-    private var style = SubtitleStyle.DEFAULT
-    private var offset = 0f
+    /** The state and the reload rules, see [SubtitleStyleEditor] */
+    private lateinit var editor: SubtitleStyleEditor
+    private val style get() = editor.style
+    private val offset get() = editor.offset
 
-    /** True once a style option changed, a reload is then needed when the panel closes */
-    private var styleChanged = false
+    /** A style change made before a rotation destroyed the previous panel, still waiting for its reload */
+    private var carriedChange = false
 
     /** Set while the widgets are updated from code, to ignore the listeners they trigger */
     private var updating = false
@@ -70,23 +72,26 @@ class SubtitleStyleDialog : VLCBottomSheetDialogFragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        styleChanged = savedInstanceState?.getBoolean(STATE_STYLE_CHANGED) ?: false
+        carriedChange = savedInstanceState?.getBoolean(STATE_STYLE_CHANGED) ?: false
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        outState.putBoolean(STATE_STYLE_CHANGED, styleChanged)
+        outState.putBoolean(STATE_STYLE_CHANGED, if (::editor.isInitialized) editor.reloadNeeded else carriedChange)
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         root = inflate(inflater, container, R.layout.subtitle_style_dialog)!!
         settings = Settings.getInstance(requireContext())
-        style = SubtitleStyle.read(
-            { key, def -> settings.getString(key, def) ?: def },
-            { key, def -> settings.getInt(key, def) },
-            { key, def -> settings.getBoolean(key, def) }
+        editor = SubtitleStyleEditor(
+            SubtitleStyle.read(
+                { key, def -> settings.getString(key, def) ?: def },
+                { key, def -> settings.getInt(key, def) },
+                { key, def -> settings.getBoolean(key, def) }
+            ),
+            settings.getFloat(KEY_SUBTITLES_VERTICAL_OFFSET, 0f),
+            carriedChange
         )
-        offset = SubtitlePositionHelper.clamp(settings.getFloat(KEY_SUBTITLES_VERTICAL_OFFSET, 0f))
 
         preview = root.findViewById(R.id.subtitle_style_preview)
         sizeBar = root.findViewById(R.id.subtitle_style_size)
@@ -146,9 +151,10 @@ class SubtitleStyleDialog : VLCBottomSheetDialogFragment() {
     override fun onDismiss(dialog: DialogInterface) {
         super.onDismiss(dialog)
         val activity = activity as? VideoPlayerActivity ?: return
+        if (!::editor.isInitialized) return // dismissed before the view was created
         // A rotation destroys the panel without the user closing it: the flag is restored with the new one
-        if (styleChanged && !activity.isChangingConfigurations) {
-            styleChanged = false
+        if (editor.reloadNeeded && !activity.isChangingConfigurations) {
+            editor.markReloaded()
             activity.reloadForSubtitleStyle()
         }
     }
@@ -178,9 +184,7 @@ class SubtitleStyleDialog : VLCBottomSheetDialogFragment() {
 
     /** Save [newStyle] to the preferences and flag that a reload is needed. Callers call [refresh] when widgets must follow */
     private fun applyStyle(newStyle: SubtitleStyle) {
-        if (newStyle == style) return
-        style = newStyle
-        styleChanged = true
+        if (!editor.setStyle(newStyle)) return
         settings.edit {
             newStyle.toPrefValues().forEach { (key, value) ->
                 when (value) {
@@ -195,7 +199,7 @@ class SubtitleStyleDialog : VLCBottomSheetDialogFragment() {
 
     /** Save the position and move the real subtitles right away, no reload needed */
     private fun applyOffset(newOffset: Float, fromSlider: Boolean = false, fromPreview: Boolean = false) {
-        offset = SubtitlePositionHelper.clamp(newOffset)
+        editor.setOffset(newOffset)
         settings.edit { putFloat(KEY_SUBTITLES_VERTICAL_OFFSET, offset) }
         (activity as? VideoPlayerActivity)?.applySubtitleOffset()
         // Keep the other position widgets in sync without rebuilding everything on each drag frame
