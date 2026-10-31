@@ -188,6 +188,9 @@ dependencies {
     api "io.coil-kt:coil-compose:$rootProject.ext.coilVersion"
     api "sh.calvin.reorderable:reorderable:$rootProject.ext.reorderableVersion"
 
+    // Tag editor (TagLib wrapper, Apache-2.0; bundled TagLib is LGPL/MPL)
+    implementation "io.github.kyant0:taglib:1.0.5"
+
     // AppCompat
     api "androidx.activity:activity-ktx:$rootProject.ext.androidxActivityVersion"
     api "androidx.fragment:fragment-ktx:$rootProject.ext.androidxFragmentVersion"

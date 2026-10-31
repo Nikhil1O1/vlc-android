@@ -986,6 +986,10 @@
             android:name=".gui.HeaderMediaListActivity"
             android:theme="@style/Theme.VLC.NoStatus"/>
         <activity
+            android:name=".gui.music.tags.TagEditorActivity"
+            android:theme="@style/Theme.VLC"
+            android:windowSoftInputMode="adjustResize"/>
+        <activity
             android:name=".gui.InfoActivity"
             android:theme="@style/Theme.VLC.NoStatus"/>
         <activity

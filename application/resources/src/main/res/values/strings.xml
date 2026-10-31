@@ -1463,4 +1463,27 @@
     <string name="music_repeat">Repeat</string>
     <string name="music_options">Options</string>
     <string name="music_reorder">Reorder</string>
+    <!-- Tag editor -->
+    <string name="tag_editor_title">Edit tags</string>
+    <string name="tag_editor_album_title">Edit album tags</string>
+    <string name="tag_editor_album_hint">Changes apply to all %1$d tracks of this album. Only fields you change are written.</string>
+    <string name="tag_editor_save">Save</string>
+    <string name="tag_editor_saved">Tags saved</string>
+    <string name="tag_editor_not_found">Track not found in the library</string>
+    <string name="tag_editor_read_only">This file is not on local storage, so its tags cannot be edited</string>
+    <string name="tag_editor_needs_permission">Editing tags needs access to all files</string>
+    <string name="tag_editor_grant_access">Grant access</string>
+    <string name="tag_editor_change_cover">Change cover</string>
+    <string name="tag_editor_remove_cover">Remove cover</string>
+    <string name="tag_editor_bad_image">Could not read that image</string>
+    <string name="tag_title">Title</string>
+    <string name="tag_artist">Artist</string>
+    <string name="tag_album">Album</string>
+    <string name="tag_album_artist">Album artist</string>
+    <string name="tag_genre">Genre</string>
+    <string name="tag_year">Year</string>
+    <string name="tag_track">Track</string>
+    <string name="tag_disc">Disc</string>
+    <string name="tag_edit_menu">Edit tags</string>
+    <string name="tag_edit_album_menu">Edit album tags</string>
 </resources>

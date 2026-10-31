@@ -32,6 +32,7 @@ import org.videolan.tools.Settings
 import org.videolan.vlc.PlaybackService
 import org.videolan.vlc.R
 import org.videolan.vlc.databinding.PlayerOptionItemBinding
+import org.videolan.vlc.gui.music.tags.TagEditorActivity
 import org.videolan.vlc.gui.AudioPlayerContainerActivity
 import org.videolan.vlc.gui.BaseActivity
 import org.videolan.vlc.gui.DiffUtilAdapter
@@ -80,6 +81,8 @@ private const val ID_AUDIO_CONTROL_SETTING = 20L
 private const val ID_SAFE_MODE_LOCK = 21L
 private const val ID_SAFE_MODE_UNLOCK = 22L
 private const val ID_SHARE = 23L
+private const val ID_EDIT_TAGS = 24L
+private const val ID_EDIT_ALBUM_TAGS = 25L
 @SuppressLint("ShowToast")
 class PlayerOptionsDelegate(val activity: FragmentActivity, val service: PlaybackService, private val showABReapeat:Boolean = true)  {
 
@@ -134,6 +137,12 @@ class PlayerOptionsDelegate(val activity: FragmentActivity, val service: Playbac
             options.add(PlayerOption(ID_VIDEO_CONTROL_SETTING, R.drawable.ic_video_controls, res.getString(R.string.control_setting)))
         } else if (!Settings.showTvUi) {
             options.add(PlayerOption(ID_SHARE, R.drawable.ic_share, res.getString(R.string.share_track_info)))
+            service.playlistManager.getCurrentMedia()?.let { media ->
+                if (media.id > 0L && media.uri.scheme == "file") {
+                    options.add(PlayerOption(ID_EDIT_TAGS, R.drawable.ic_edit, res.getString(R.string.tag_edit_menu)))
+                    if (media.albumId > 0L) options.add(PlayerOption(ID_EDIT_ALBUM_TAGS, R.drawable.ic_edit, res.getString(R.string.tag_edit_album_menu)))
+                }
+            }
         }
 
         if (!Settings.showTvUi) {
@@ -263,6 +272,14 @@ class PlayerOptionsDelegate(val activity: FragmentActivity, val service: Playbac
                 hide()
                 val videoControlsSettingsDialog = VideoControlsSettingsDialog()
                 videoControlsSettingsDialog.show(activity.supportFragmentManager, "fragment_video_controls_settings")
+            }
+            ID_EDIT_TAGS, ID_EDIT_ALBUM_TAGS -> {
+                hide()
+                service.playlistManager.getCurrentMedia()?.let { media ->
+                    if (option.id == ID_EDIT_TAGS) TagEditorActivity.editTrack(activity, media.id)
+                    else TagEditorActivity.editAlbum(activity, media.albumId)
+                }
+                return
             }
             ID_SHARE -> {
                 hide()
