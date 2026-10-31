@@ -1612,8 +1612,11 @@ open class VideoPlayerActivity : AppCompatActivity(), PlaybackService.Callback, 
                 }
                 MediaPlayer.Event.Vout -> {
                     updateNavStatus()
-                    if (event.voutCount > 0)
+                    if (event.voutCount > 0) {
                         service.mediaplayer.updateVideoSurfaces()
+                        // The subtitle surface only exists once the video output is up: restore the saved position now
+                        applySubtitleOffset()
+                    }
                     if (menuIdx == -1)
                         handleVout(event.voutCount)
                 }
