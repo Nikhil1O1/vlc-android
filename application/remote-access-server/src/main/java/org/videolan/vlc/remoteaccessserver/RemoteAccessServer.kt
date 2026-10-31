@@ -933,9 +933,10 @@ class RemoteAccessServer(private val context: Context) : PlaybackService.Callbac
             //append all the previous paths and the current one
             for (i in 0..index) appendPathToUri(pathParts[i], currentPathUri)
             val currentUri = currentPathUri.build()
+            val currentPath = currentUri.path
             val text: String = when {
                 //substitute a storage path to its name. See [replaceStoragePath]
-                PathOperationDelegate.storages.containsKey(currentUri.path) -> retrieveSafePath(PathOperationDelegate.storages.valueAt(PathOperationDelegate.storages.indexOfKey(currentUri.path)))
+                currentPath != null && PathOperationDelegate.storages.containsKey(currentPath) -> retrieveSafePath(PathOperationDelegate.storages.valueAt(PathOperationDelegate.storages.indexOfKey(currentPath)))
                 else -> currentUri.lastPathSegment ?: "root"
             }
             list.add(Pair(text, currentPathUri.toString()))

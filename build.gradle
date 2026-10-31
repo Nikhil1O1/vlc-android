@@ -12,6 +12,7 @@ buildscript {
     dependencies {
         classpath "com.android.tools.build:gradle:$android_plugin_version"
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath "org.jetbrains.kotlin:compose-compiler-gradle-plugin:$kotlin_version"
         classpath 'com.github.dcendents:android-maven-gradle-plugin:2.1'
         classpath 'com.vanniktech:gradle-maven-publish-plugin:0.34.0'
     }
@@ -83,9 +84,13 @@ ext {
     androidxLegacyVersion = '1.0.0'
     androidxCoreVersion = '1.12.0'
     appCompatVersion = '1.6.1'
-    lifecycleVersion = '2.5.1'
+    lifecycleVersion = '2.8.7'
+    composeBomVersion = '2025.05.01'
+    materialKolorVersion = '3.0.0'
+    coilVersion = '2.7.0'
+    reorderableVersion = '2.4.3'
     androidxPreferencesVersion = '1.2.1'
-    androidxActivityVersion = '1.8.2'
+    androidxActivityVersion = '1.9.3'
     androidxFragmentVersion = '1.6.2'
     androidxAnnotationVersion = '1.7.1'
     androidxRecyclerviewVersion = '1.3.2'
