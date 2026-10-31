@@ -17,6 +17,19 @@ enum class NowPlayingStyle(val key: String, @StringRes val labelRes: Int) {
     }
 }
 
+/** How the live sound is drawn. Persisted by [key] under KEY_VISUALIZER_STYLE. */
+enum class VisualizerStyle(val key: String, @StringRes val labelRes: Int) {
+    Off("off", R.string.music_visualizer_off),
+    Bars("bars", R.string.music_visualizer_bars),
+    Wave("wave", R.string.music_visualizer_wave),
+    Ring("ring", R.string.music_visualizer_ring),
+    Glow("glow", R.string.music_visualizer_glow);
+
+    companion object {
+        fun fromKey(key: String?) = entries.firstOrNull { it.key == key } ?: Off
+    }
+}
+
 @Immutable
 data class NowPlayingUiState(
     val title: String? = null,
@@ -32,6 +45,7 @@ data class NowPlayingUiState(
     val shuffling: Boolean = false,
     val favorite: Boolean = false,
     val style: NowPlayingStyle = NowPlayingStyle.Expressive,
+    val visualizer: VisualizerStyle = VisualizerStyle.Off,
 )
 
 class NowPlayingActions(
@@ -47,6 +61,7 @@ class NowPlayingActions(
     val onOptions: () -> Unit,
     val onVolume: () -> Unit,
     val onStyle: (NowPlayingStyle) -> Unit,
+    val onVisualizer: (VisualizerStyle) -> Unit,
     val onMoveQueueItem: (from: Int, to: Int) -> Unit,
     val onRemoveQueueItem: (Int) -> Unit,
 )

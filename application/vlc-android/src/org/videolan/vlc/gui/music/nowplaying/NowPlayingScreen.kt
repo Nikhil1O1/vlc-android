@@ -6,6 +6,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.shape.CircleShape
+import org.videolan.vlc.gui.music.visualizer.RING_COVER_FRACTION
+import org.videolan.vlc.gui.music.visualizer.VisualizerStrip
+import org.videolan.vlc.gui.music.visualizer.coverVisualizer
+import org.videolan.vlc.gui.music.visualizer.rememberVisualizerFrame
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -22,6 +27,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.MoreVert
@@ -127,6 +133,10 @@ private fun FullPlayer(state: NowPlayingUiState, actions: NowPlayingActions, mod
             )
             NowPlayingStyle.Normal, NowPlayingStyle.FullCover -> Unit
         }
+        // Ring and Glow need room around the cover, so the full-bleed style falls back to bars.
+        val vis = if (style == NowPlayingStyle.FullCover && state.visualizer.let { it == VisualizerStyle.Ring || it == VisualizerStyle.Glow }) VisualizerStyle.Bars else state.visualizer
+        val frame = rememberVisualizerFrame(enabled = vis != VisualizerStyle.Off && state.playing)
+        val accent = scheme.primary
 
         // ---- full-bleed cover for the Full cover style ----
         if (style == NowPlayingStyle.FullCover) {
@@ -147,10 +157,19 @@ private fun FullPlayer(state: NowPlayingUiState, actions: NowPlayingActions, mod
                 else -> {
                     Spacer(Modifier.weight(0.25f))
                     val corner = if (style == NowPlayingStyle.Expressive) 36 else 24
-                    CoverPager(state, actions, Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(corner.dp)), corner = corner)
+                    if (vis == VisualizerStyle.Ring || vis == VisualizerStyle.Glow) {
+                        val fraction = if (vis == VisualizerStyle.Ring) RING_COVER_FRACTION else 0.86f
+                        Box(Modifier.fillMaxWidth().aspectRatio(1f).coverVisualizer(vis, frame, accent), contentAlignment = Alignment.Center) {
+                            val shape = if (vis == VisualizerStyle.Ring) CircleShape else RoundedCornerShape(corner.dp)
+                            CoverPager(state, actions, Modifier.fillMaxWidth(fraction).aspectRatio(1f).clip(shape), corner = if (vis == VisualizerStyle.Ring) 0 else corner)
+                        }
+                    } else {
+                        CoverPager(state, actions, Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(corner.dp)), corner = corner)
+                    }
                     Spacer(Modifier.weight(0.25f))
                 }
             }
+            if (vis == VisualizerStyle.Bars || vis == VisualizerStyle.Wave) VisualizerStrip(vis, frame, accent)
             InfoRow(state, actions, centered = style == NowPlayingStyle.Gradient)
             Spacer(Modifier.height(12.dp))
             Seek(state, actions)
@@ -169,6 +188,7 @@ private fun Header(state: NowPlayingUiState, actions: NowPlayingActions) {
     var menu by remember { mutableStateOf(false) }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
         IconButton(onClick = actions.onTogglePlayer) { Icon(Icons.Filled.KeyboardArrowDown, null) }
+        Row {
         Box {
             IconButton(onClick = { menu = true }) { Icon(Icons.Filled.Palette, stringResource(R.string.music_player_style)) }
             DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
@@ -179,6 +199,19 @@ private fun Header(state: NowPlayingUiState, actions: NowPlayingActions) {
                     )
                 }
             }
+        }
+        Box {
+            var vmenu by remember { mutableStateOf(false) }
+            IconButton(onClick = { vmenu = true }) { Icon(Icons.Filled.GraphicEq, stringResource(R.string.music_visualizer)) }
+            DropdownMenu(expanded = vmenu, onDismissRequest = { vmenu = false }) {
+                VisualizerStyle.entries.forEach { v ->
+                    DropdownMenuItem(
+                        text = { Text(stringResource(v.labelRes), fontWeight = if (v == state.visualizer) FontWeight.Bold else FontWeight.Normal) },
+                        onClick = { vmenu = false; actions.onVisualizer(v) },
+                    )
+                }
+            }
+        }
         }
     }
 }

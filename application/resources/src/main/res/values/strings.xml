@@ -1463,6 +1463,15 @@
     <string name="music_repeat">Repeat</string>
     <string name="music_options">Options</string>
     <string name="music_reorder">Reorder</string>
+    <string name="music_visualizer">Visualizer</string>
+    <string name="music_visualizer_off">Off</string>
+    <string name="music_visualizer_bars">Spectrum bars</string>
+    <string name="music_visualizer_wave">Waveform</string>
+    <string name="music_visualizer_ring">Pulsing ring</string>
+    <string name="music_visualizer_glow">Bass glow</string>
+    <string name="music_visualizer_permission_title">Microphone permission</string>
+    <string name="music_visualizer_permission_message">Android only lets an app read its own sound output through the microphone permission. VLC never records anything; it only draws what is playing.</string>
+    <string name="music_visualizer_denied">Without the permission the visualizer cannot run</string>
     <!-- Tag editor -->
     <string name="tag_editor_title">Edit tags</string>
     <string name="tag_editor_album_title">Edit album tags</string>

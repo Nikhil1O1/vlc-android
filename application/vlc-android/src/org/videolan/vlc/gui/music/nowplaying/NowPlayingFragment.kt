@@ -13,6 +13,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.produceState
+import kotlinx.coroutines.withContext
+import org.videolan.medialibrary.interfaces.Medialibrary
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -31,6 +33,13 @@ import kotlinx.coroutines.launch
 import org.videolan.medialibrary.interfaces.media.MediaWrapper
 import org.videolan.vlc.PlaybackService
 import org.videolan.vlc.R
+import android.Manifest
+import android.content.pm.PackageManager
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContextCompat
+import org.videolan.tools.KEY_VISUALIZER_STYLE
 import org.videolan.vlc.gui.AudioPlayerContainerActivity
 import org.videolan.vlc.gui.audio.AudioPlayerHost
 import org.videolan.vlc.gui.helpers.BookmarkListDelegate
@@ -56,6 +65,14 @@ class NowPlayingFragment : Fragment(), AudioPlayerHost {
     private var slideOffset by mutableFloatStateOf(0f)
     private var playerStyle by mutableStateOf(NowPlayingStyle.Expressive)
     private var sheetState by mutableIntStateOf(0)
+    private var visualizerStyle by mutableStateOf(VisualizerStyle.Off)
+    private var pendingVisualizer: VisualizerStyle? = null
+    private val micPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        val wanted = pendingVisualizer
+        pendingVisualizer = null
+        if (granted && wanted != null) setVisualizer(wanted)
+        else Toast.makeText(requireContext(), R.string.music_visualizer_denied, Toast.LENGTH_SHORT).show()
+    }
     private var optionsDelegate: PlayerOptionsDelegate? = null
     private var bookmarkListDelegate: BookmarkListDelegate? = null
 
@@ -65,6 +82,8 @@ class NowPlayingFragment : Fragment(), AudioPlayerHost {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         playerStyle = NowPlayingStyle.fromKey(Settings.getInstance(requireContext()).getString(KEY_MUSIC_PLAYER_STYLE, null))
+        val savedVisualizer = VisualizerStyle.fromKey(Settings.getInstance(requireContext()).getString(KEY_VISUALIZER_STYLE, null))
+        visualizerStyle = if (savedVisualizer != VisualizerStyle.Off && !hasMicPermission()) VisualizerStyle.Off else savedVisualizer
         view.findViewById<ComposeView>(R.id.now_playing_compose).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent { NowPlayingContent() }
@@ -80,7 +99,13 @@ class NowPlayingFragment : Fragment(), AudioPlayerHost {
         var tick by remember { mutableIntStateOf(0) }
         val media: MediaWrapper? = remember(state) { playlistModel.currentMediaWrapper }
         val artwork = media?.artworkMrl
-        var favorite by remember(media) { mutableStateOf(media?.isFavorite == true) }
+        // The database is the source of truth: re-read after every toggle and whenever the track changes,
+        // instead of trusting a cached MediaWrapper that other screens may have changed.
+        val mediaId = media?.id ?: 0L
+        var favoriteTick by remember { mutableIntStateOf(0) }
+        val favorite by produceState(false, mediaId, favoriteTick) {
+            value = mediaId > 0L && withContext(Dispatchers.IO) { Medialibrary.getInstance().getMedia(mediaId)?.isFavorite == true }
+        }
         val scheme by produceState(fallbackColorScheme(dark), artwork, dark) {
             value = CoverColorRepository.scheme(artwork, dark)
         }
@@ -98,6 +123,7 @@ class NowPlayingFragment : Fragment(), AudioPlayerHost {
             shuffling = remember(state, tick) { playlistModel.shuffling },
             favorite = favorite,
             style = playerStyle,
+            visualizer = visualizerStyle,
         )
         val actions = remember {
             NowPlayingActions(
@@ -117,10 +143,13 @@ class NowPlayingFragment : Fragment(), AudioPlayerHost {
                 },
                 onShuffle = { playlistModel.shuffle(); tick++ },
                 onFavorite = {
-                    val m = playlistModel.currentMediaWrapper ?: return@NowPlayingActions
-                    val new = !m.isFavorite
-                    favorite = new
-                    lifecycleScope.launch(Dispatchers.IO) { m.isFavorite = new }
+                    val id = playlistModel.currentMediaWrapper?.id ?: return@NowPlayingActions
+                    if (id <= 0L) return@NowPlayingActions
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        val fresh = Medialibrary.getInstance().getMedia(id) ?: return@launch
+                        fresh.isFavorite = !fresh.isFavorite
+                        favoriteTick++
+                    }
                 },
                 onOptions = { showAdvancedOptions(null) },
                 onVolume = {
@@ -131,6 +160,7 @@ class NowPlayingFragment : Fragment(), AudioPlayerHost {
                     playerStyle = style
                     Settings.getInstance(requireContext()).putSingle(KEY_MUSIC_PLAYER_STYLE, style.key)
                 },
+                onVisualizer = { requestVisualizer(it) },
                 onMoveQueueItem = { from, to -> playlistModel.move(from, to) },
                 onRemoveQueueItem = { playlistModel.remove(it) },
             )
@@ -138,6 +168,25 @@ class NowPlayingFragment : Fragment(), AudioPlayerHost {
         MusicTheme(scheme.animated()) {
             NowPlayingScreen(ui, actions, slideOffset)
         }
+    }
+
+    private fun hasMicPermission() =
+        ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+
+    private fun setVisualizer(style: VisualizerStyle) {
+        visualizerStyle = style
+        Settings.getInstance(requireContext()).putSingle(KEY_VISUALIZER_STYLE, style.key)
+    }
+
+    private fun requestVisualizer(style: VisualizerStyle) {
+        if (style == VisualizerStyle.Off || hasMicPermission()) { setVisualizer(style); return }
+        pendingVisualizer = style
+        AlertDialog.Builder(requireContext())
+            .setTitle(R.string.music_visualizer_permission_title)
+            .setMessage(R.string.music_visualizer_permission_message)
+            .setPositiveButton(android.R.string.ok) { _, _ -> micPermission.launch(Manifest.permission.RECORD_AUDIO) }
+            .setNegativeButton(android.R.string.cancel) { _, _ -> pendingVisualizer = null }
+            .show()
     }
 
     // AudioPlayerHost
