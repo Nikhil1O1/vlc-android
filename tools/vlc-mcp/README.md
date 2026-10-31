@@ -15,7 +15,7 @@ Claude Code:
 
 ```sh
 claude mcp add vlc \
-  -e VLC_URL=https://192.168.1.42:8443 \
+  -e VLC_URL=https://<phone-ip>:8443 \
   -e VLC_TOKEN=vlc_xxxxxxxx \
   -e VLC_CERT_SHA256=C1:EC:70:... \
   -- uv run --directory /path/to/vlc-android/tools/vlc-mcp vlc-mcp
@@ -30,7 +30,7 @@ Claude Desktop (`claude_desktop_config.json`):
       "command": "uv",
       "args": ["run", "--directory", "/path/to/vlc-android/tools/vlc-mcp", "vlc-mcp"],
       "env": {
-        "VLC_URL": "https://192.168.1.42:8443",
+        "VLC_URL": "https://<phone-ip>:8443",
         "VLC_TOKEN": "vlc_xxxxxxxx",
         "VLC_CERT_SHA256": "C1:EC:70:..."
       }
