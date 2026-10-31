@@ -1,6 +1,7 @@
 package org.videolan.vlc.gui.music.theme
 
 import android.graphics.Bitmap
+import android.net.Uri
 import android.util.LruCache
 import androidx.compose.material3.ColorScheme
 import androidx.compose.ui.graphics.Color
@@ -22,7 +23,7 @@ object CoverColorRepository {
         val key = "$artworkMrl|$dark"
         cache.get(key)?.let { return it }
         val scheme = withContext(Dispatchers.IO) {
-            val seed = AudioUtil.readCoverBitmap(artworkMrl, SAMPLE_SIZE)?.let(::seedColor)
+            val seed = AudioUtil.readCoverBitmap(Uri.decode(artworkMrl), SAMPLE_SIZE)?.let(::seedColor)
             if (seed == null) fallbackColorScheme(dark) else dynamicColorScheme(seed, dark)
         }
         cache.put(key, scheme)

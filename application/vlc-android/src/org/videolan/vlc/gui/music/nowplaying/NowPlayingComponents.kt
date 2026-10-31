@@ -2,6 +2,7 @@ package org.videolan.vlc.gui.music.nowplaying
 
 import android.graphics.Bitmap
 import android.graphics.Matrix
+import android.net.Uri
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
@@ -73,7 +74,7 @@ import org.videolan.vlc.gui.helpers.AudioUtil
 fun Cover(artworkMrl: String?, modifier: Modifier, pixelWidth: Int, contentScale: ContentScale = ContentScale.Crop) {
     val bitmap by produceState<Bitmap?>(null, artworkMrl, pixelWidth) {
         value = if (artworkMrl.isNullOrEmpty()) null
-        else withContext(Dispatchers.IO) { AudioUtil.readCoverBitmap(artworkMrl, pixelWidth) }
+        else withContext(Dispatchers.IO) { AudioUtil.readCoverBitmap(Uri.decode(artworkMrl), pixelWidth) }
     }
     Box(modifier.background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
         val bmp = bitmap
