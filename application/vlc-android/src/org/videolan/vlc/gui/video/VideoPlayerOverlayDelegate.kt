@@ -92,6 +92,7 @@ import org.videolan.vlc.databinding.PlayerHudRightBinding
 import org.videolan.vlc.gui.audio.PlaylistAdapter
 import org.videolan.vlc.gui.browser.FilePickerActivity
 import org.videolan.vlc.gui.browser.KEY_MEDIA
+import org.videolan.vlc.gui.dialogs.SubtitleStyleDialog
 import org.videolan.vlc.gui.dialogs.VideoTracksDialog
 import org.videolan.vlc.gui.helpers.BookmarkListDelegate
 import org.videolan.vlc.gui.helpers.OnRepeatListenerKey
@@ -268,6 +269,7 @@ class VideoPlayerOverlayDelegate (private val player: VideoPlayerActivity) {
                         VideoTracksDialog.VideoTrackOption.SUB_DELAY -> player.delayDelegate.showSubsDelaySetting()
                         VideoTracksDialog.VideoTrackOption.SUB_DOWNLOAD -> downloadSubtitles()
                         VideoTracksDialog.VideoTrackOption.SUB_PICK -> pickSubtitles()
+                        VideoTracksDialog.VideoTrackOption.SUB_STYLE -> SubtitleStyleDialog().show(player.supportFragmentManager, SubtitleStyleDialog.TAG)
                     }
                 }, { trackID: String, trackType: VideoTracksDialog.TrackType ->
             when (trackType) {

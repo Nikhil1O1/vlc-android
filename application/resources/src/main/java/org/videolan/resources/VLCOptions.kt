@@ -142,7 +142,7 @@ object VLCOptions {
             }
             val freetypeColorOpacity = pref.getInt(KEY_SUBTITLES_COLOR_OPACITY, 255)
 
-            val freetypeBackgroundColor = Integer.decode(String.format("0x%06X", (0xFFFFFF and pref.getInt(KEY_SUBTITLES_BACKGROUND_COLOR, 16777215))))
+            val freetypeBackgroundColor = Integer.decode(String.format("0x%06X", (0xFFFFFF and pref.getInt(KEY_SUBTITLES_BACKGROUND_COLOR, SubtitleStyle.BLACK))))
             val freetypeBackgroundColorOpacity = pref.getInt(KEY_SUBTITLES_BACKGROUND_COLOR_OPACITY, 255)
             val freetypeBackgroundEnabled = pref.getBoolean(KEY_SUBTITLES_BACKGROUND, false)
 

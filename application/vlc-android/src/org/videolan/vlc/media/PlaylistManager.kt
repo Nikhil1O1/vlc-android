@@ -19,7 +19,9 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.actor
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import org.videolan.libvlc.FactoryManager
 import org.videolan.libvlc.MediaPlayer
 import org.videolan.libvlc.RendererItem
@@ -381,6 +383,42 @@ class PlaylistManager(val service: PlaybackService) : MediaWrapperList.EventList
             videoBackground = videoBackground || (!player.isVideoPlaying() && player.canSwitchToVideo())
         }
         launch { playIndex(currentIndex) }
+    }
+
+    @Volatile
+    private var reloadingInstance = false
+
+    /**
+     * Rebuild the LibVLC instance (subtitle styling is only read at instance creation) and resume
+     * the current media at the same position, without stopping the playlist or closing the video player.
+     *
+     * @param reattach called once the new [MediaPlayer] exists and before playback restarts: the caller
+     * must attach its video views to [PlayerController.mediaplayer] there, otherwise playback would
+     * restart as audio-only ([PlayerController.isVideoPlaying] relies on attached views).
+     */
+    fun reloadForNewInstance(reattach: () -> Unit) {
+        if (reloadingInstance || currentIndex < 0 || !hasMedia()) return
+        reloadingInstance = true
+        launch {
+            try {
+                val index = currentIndex
+                val wasPaused = player.isPaused()
+                savedTime = player.getCurrentTime()
+                savePosition(video = true)
+                saveMediaMeta().join()
+                player.mediaplayer.detachViews()
+                withContext(Dispatchers.IO) { VLCInstance.restart() }
+                player.restart()
+                reattach()
+                playIndex(index, forceResume = true)
+                if (wasPaused) {
+                    withTimeoutOrNull(5000) { while (!player.isPlaying()) delay(50) }
+                    player.pause()
+                }
+            } finally {
+                reloadingInstance = false
+            }
+        }
     }
 
     fun restart() {

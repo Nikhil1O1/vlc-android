@@ -397,6 +397,8 @@ const val KEY_SUBTITLES_SHADOW = "subtitles_shadow"
 const val KEY_SUBTITLES_SHADOW_COLOR = "subtitles_shadow_color"
 const val KEY_SUBTITLES_SHADOW_COLOR_OPACITY = "subtitles_shadow_color_opacity"
 const val KEY_SUBTITLES_AUTOLOAD = "subtitles_autoload"
+/** Float, fraction of the video layout height the subtitles are lifted by (negative lowers them). See SubtitlePositionHelper */
+const val KEY_SUBTITLES_VERTICAL_OFFSET = "subtitles_vertical_offset"
 const val KEY_OPENGL = "opengl"
 
 //Control settings

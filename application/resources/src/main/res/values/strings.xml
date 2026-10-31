@@ -663,6 +663,11 @@
 
     <string name="audio_delay">Audio delay</string>
     <string name="spu_delay">Subtitle delay</string>
+    <string name="subtitle_style">Subtitle style</string>
+    <string name="subtitle_style_preview">Subtitle preview</string>
+    <string name="subtitle_position">Position</string>
+    <string name="subtitle_position_hint">Drag the preview or use the slider. Moves the subtitles instantly.</string>
+    <string name="subtitle_style_apply_hint">Style changes apply when you close this panel. The video reloads for about a second.</string>
     <string name="network_shares_discovery">Looking for network shares</string>
     <string name="network_empty">This directory is empty.</string>
     <string name="network_connection_needed">No connection to local network.</string>

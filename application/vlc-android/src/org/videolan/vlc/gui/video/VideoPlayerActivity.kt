@@ -140,6 +140,7 @@ import org.videolan.resources.buildPkgString
 import org.videolan.resources.util.parcelable
 import org.videolan.resources.util.parcelableList
 import org.videolan.tools.BRIGHTNESS_VALUE
+import org.videolan.tools.KEY_SUBTITLES_VERTICAL_OFFSET
 import org.videolan.tools.DISPLAY_UNDER_NOTCH
 import org.videolan.tools.ENABLE_BRIGHTNESS_GESTURE
 import org.videolan.tools.ENABLE_DOUBLE_TAP_PLAY
@@ -571,6 +572,10 @@ open class VideoPlayerActivity : AppCompatActivity(), PlaybackService.Callback, 
         }
 
         videoLayout = findViewById(R.id.video_layout)
+        // The offset is a fraction of the layout height: follow rotation and size changes
+        videoLayout?.addOnLayoutChangeListener { _, _, top, _, bottom, _, oldTop, _, oldBottom ->
+            if (bottom - top != oldBottom - oldTop) applySubtitleOffset()
+        }
 
         /* Loading view */
         loadingImageView = findViewById(R.id.player_overlay_loading)
@@ -1047,17 +1052,36 @@ open class VideoPlayerActivity : AppCompatActivity(), PlaybackService.Callback, 
                 } else
                     vlcVout.detachViews()
             }
-            val mediaPlayer = mediaplayer
-            if (!displayManager.isOnRenderer) videoLayout?.let {
-                mediaPlayer.attachViews(it, displayManager, true, false)
-                val size = if (isBenchmark) MediaPlayer.ScaleType.SURFACE_FILL else MediaPlayer.ScaleType.entries[settings.getInt(VIDEO_RATIO, MediaPlayer.ScaleType.SURFACE_BEST_FIT.ordinal)]
-                mediaPlayer.videoScale = size
-            }
+            attachVideoViews(this)
 
             initUI()
 
             loadMedia()
         }
+    }
+
+    private fun attachVideoViews(service: PlaybackService) {
+        if (displayManager.isOnRenderer) return
+        val layout = videoLayout ?: return
+        val mediaPlayer = service.mediaplayer
+        mediaPlayer.attachViews(layout, displayManager, true, false)
+        val size = if (isBenchmark) MediaPlayer.ScaleType.SURFACE_FILL else MediaPlayer.ScaleType.entries[settings.getInt(VIDEO_RATIO, MediaPlayer.ScaleType.SURFACE_BEST_FIT.ordinal)]
+        mediaPlayer.videoScale = size
+        applySubtitleOffset()
+    }
+
+    /** Re-apply the saved subtitle position, the subtitle surface is recreated each time views are attached */
+    fun applySubtitleOffset() {
+        SubtitlePositionHelper.apply(videoLayout, settings.getFloat(KEY_SUBTITLES_VERTICAL_OFFSET, 0f))
+    }
+
+    /**
+     * Rebuild the player so changed subtitle style options are applied, resuming at the same position
+     * without closing this activity.
+     */
+    fun reloadForSubtitleStyle() {
+        val service = service ?: return
+        service.reloadForNewInstance { attachVideoViews(service) }
     }
 
     private fun initUI() {

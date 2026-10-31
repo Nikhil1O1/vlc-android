@@ -1502,6 +1502,9 @@ class PlaybackService : MediaBrowserServiceCompat(), LifecycleOwner, CoroutineSc
     private fun restartPlaylistManager() = playlistManager.restart()
     fun restartMediaPlayer() = playlistManager.player.restart()
 
+    /** Apply LibVLC instance-level options (e.g. subtitle style) without leaving the video player. See [PlaylistManager.reloadForNewInstance] */
+    fun reloadForNewInstance(reattach: () -> Unit) = playlistManager.reloadForNewInstance(reattach)
+
     fun saveMediaMeta() = playlistManager.saveMediaMeta()
 
     fun isValidIndex(positionInPlaylist: Int) = playlistManager.isValidPosition(positionInPlaylist)
