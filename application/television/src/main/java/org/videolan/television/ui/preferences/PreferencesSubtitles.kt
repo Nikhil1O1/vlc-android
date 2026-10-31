@@ -26,11 +26,9 @@ import android.annotation.TargetApi
 import android.app.Activity
 import android.content.Intent
 import android.content.SharedPreferences
-import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import androidx.core.content.ContextCompat
 import androidx.preference.CheckBoxPreference
 import androidx.preference.ListPreference
 import androidx.preference.SeekBarPreference
@@ -38,6 +36,8 @@ import com.jaredrummler.android.colorpicker.ColorPreferenceCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
+import org.videolan.resources.SubtitlePreset
+import org.videolan.resources.SubtitleStyle
 import org.videolan.resources.VLCInstance
 import org.videolan.television.ui.COLOR_PICKER_SELECTED_COLOR
 import org.videolan.television.ui.COLOR_PICKER_TITLE
@@ -131,29 +131,8 @@ class PreferencesSubtitles : BasePreferenceFragment(), SharedPreferences.OnShare
         val presetPreference = findPreference<ListPreference>("subtitles_presets")!!
         presetPreference.value = "-1"
         presetPreference.setOnPreferenceChangeListener { _, newValue ->
-            resetAll()
-            when (newValue) {
-                "1" -> subtitlesSize.value = "13"
-                "2" -> {
-                    subtitlesSize.value = "10"
-                    subtitlesBackgroundEnabled.isChecked = true
-                    subtitlesBackgroundOpacity.value = 255
-                    subtitlesShadowEnabled.isChecked = false
-                    subtitlesOutlineEnabled.isChecked = false
-                }
-                "3" -> {
-                    subtitlesBackgroundEnabled.isChecked = true
-                    subtitlesBackgroundOpacity.value = 128
-                    subtitlesShadowEnabled.isChecked = false
-                }
-                "4" -> subtitlesColor.saveValue(Color.YELLOW)
-                "5" -> {
-                    subtitlesColor.saveValue(Color.YELLOW)
-                    subtitlesBackgroundEnabled.isChecked = true
-                    subtitlesBackgroundOpacity.value = 128
-                    subtitlesShadowEnabled.isChecked = false
-                }
-            }
+            // The presets are shared with the phone settings and the in-player subtitle style panel
+            SubtitlePreset.fromId(newValue as? String)?.let { applyStyle(it.style) }
             false
         }
 
@@ -189,23 +168,24 @@ class PreferencesSubtitles : BasePreferenceFragment(), SharedPreferences.OnShare
         managePreferenceVisibilities()
     }
 
-    private fun resetAll() {
-        subtitlesSize.value = "16"
-        subtitlesBold.isChecked = false
-        subtitlesColor.saveValue(ContextCompat.getColor(activity, R.color.white))
-        subtitlesOpacity.value = 255
+    /** Set every subtitle style preference from [style] */
+    private fun applyStyle(style: SubtitleStyle) {
+        subtitlesSize.value = style.size
+        subtitlesBold.isChecked = style.bold
+        subtitlesColor.saveValue(style.color)
+        subtitlesOpacity.value = style.colorOpacity
 
-        subtitlesBackgroundEnabled.isChecked = false
-        subtitlesBackgroundColor.saveValue(ContextCompat.getColor(activity, R.color.black))
-        subtitlesBackgroundOpacity.value = 255
+        subtitlesBackgroundEnabled.isChecked = style.backgroundEnabled
+        subtitlesBackgroundColor.saveValue(style.backgroundColor)
+        subtitlesBackgroundOpacity.value = style.backgroundOpacity
 
-        subtitlesShadowEnabled.isChecked = true
-        subtitlesShadowColor.saveValue(ContextCompat.getColor(activity, R.color.black))
-        subtitlesShadowOpacity.value = 255
+        subtitlesShadowEnabled.isChecked = style.shadowEnabled
+        subtitlesShadowColor.saveValue(style.shadowColor)
+        subtitlesShadowOpacity.value = style.shadowOpacity
 
-        subtitlesOutlineEnabled.isChecked = true
-        subtitlesOutlineColor.saveValue(ContextCompat.getColor(activity, R.color.black))
-        subtitlesOutlineOpacity.value = 255
+        subtitlesOutlineEnabled.isChecked = style.outlineEnabled
+        subtitlesOutlineColor.saveValue(style.outlineColor)
+        subtitlesOutlineOpacity.value = style.outlineOpacity
     }
 
     @Deprecated("Deprecated in Java")
