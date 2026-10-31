@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Host for the Compose now playing screen. The stubs keep the existing options and bookmark delegates working. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <androidx.compose.ui.platform.ComposeView
+        android:id="@+id/now_playing_compose"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- required by BookmarkListDelegate; seek bar markers are drawn in Compose later -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/bookmark_marker_container"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_gravity="bottom" />
+
+    <androidx.appcompat.widget.ViewStubCompat
+        android:id="@+id/bookmarks_stub"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout="@layout/bookmarks" />
+
+    <androidx.appcompat.widget.ViewStubCompat
+        android:id="@+id/player_options_stub"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout="@layout/player_options" />
+</FrameLayout>

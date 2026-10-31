@@ -86,6 +86,9 @@ import org.videolan.vlc.PlaybackService
 import org.videolan.vlc.R
 import org.videolan.vlc.VlcMigrationHelper
 import org.videolan.vlc.gui.audio.AudioPlayer
+import org.videolan.vlc.gui.audio.AudioPlayerHost
+import org.videolan.vlc.gui.music.nowplaying.NowPlayingFragment
+import org.videolan.tools.KEY_MUSIC_CLASSIC_PLAYER
 import org.videolan.vlc.gui.audio.AudioPlaylistTipsDelegate
 import org.videolan.vlc.gui.audio.AudioTipsDelegate
 import org.videolan.vlc.gui.dialogs.EqualizerFragmentDialog
@@ -125,7 +128,7 @@ open class AudioPlayerContainerActivity : BaseActivity(), KeycodeListener, Sched
     protected lateinit var toolbar: Toolbar
     private var tabLayout: TabLayout? = null
     private var navigationRail: NavigationRailView? = null
-    lateinit var audioPlayer: AudioPlayer
+    lateinit var audioPlayer: AudioPlayerHost
     private lateinit var audioPlayerContainer: FrameLayout
     lateinit var playerBehavior: PlayerBehavior<*>
     protected lateinit var fragmentContainer: View
@@ -357,7 +360,14 @@ open class AudioPlayerContainerActivity : BaseActivity(), KeycodeListener, Sched
 
     private fun initAudioPlayer() {
         findViewById<View>(R.id.audio_player_stub).visibility = View.VISIBLE
-        audioPlayer = supportFragmentManager.findFragmentById(R.id.audio_player) as AudioPlayer
+        val classicPlayer = settings.getBoolean(KEY_MUSIC_CLASSIC_PLAYER, false)
+        var playerFragment = supportFragmentManager.findFragmentById(R.id.audio_player)
+        val wantedClass = if (classicPlayer) AudioPlayer::class.java else NowPlayingFragment::class.java
+        if (playerFragment == null || playerFragment.javaClass != wantedClass) {
+            playerFragment = if (classicPlayer) AudioPlayer() else NowPlayingFragment()
+            supportFragmentManager.beginTransaction().replace(R.id.audio_player, playerFragment).commitNowAllowingStateLoss()
+        }
+        audioPlayer = playerFragment as AudioPlayerHost
         playerBehavior = from(audioPlayerContainer) as PlayerBehavior<*>
         val bottomBehavior = bottomBar?.let {
             @Suppress("UNCHECKED_CAST")

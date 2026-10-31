@@ -177,6 +177,7 @@ dependencies {
     api "androidx.compose.foundation:foundation"
     api "androidx.compose.material:material-icons-extended"
     api "androidx.compose.ui:ui"
+    api "androidx.compose.runtime:runtime-livedata"
     api "androidx.compose.ui:ui-tooling-preview"
     debugApi "androidx.compose.ui:ui-tooling"
     api "androidx.activity:activity-compose:$rootProject.ext.androidxActivityVersion"

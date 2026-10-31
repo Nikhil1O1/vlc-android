@@ -155,14 +155,14 @@ import kotlin.math.absoluteValue
 private const val TAG = "VLC/AudioPlayer"
 private const val SEARCH_TIMEOUT_MILLIS = 10000L
 
-class AudioPlayer : Fragment(), PlaylistAdapter.IPlayer, TextWatcher, IAudioPlayerAnimator by AudioPlayerAnimator() {
+class AudioPlayer : Fragment(), AudioPlayerHost, PlaylistAdapter.IPlayer, TextWatcher, IAudioPlayerAnimator by AudioPlayerAnimator() {
 
     private lateinit var binding: AudioPlayerBinding
     private lateinit var playlistAdapter: PlaylistAdapter
     private lateinit var settings: SharedPreferences
     private val handler by lazy(LazyThreadSafetyMode.NONE) { Handler(Looper.getMainLooper()) }
-    lateinit var playlistModel: PlaylistModel
-    lateinit var bookmarkModel: BookmarkModel
+    override lateinit var playlistModel: PlaylistModel
+    override lateinit var bookmarkModel: BookmarkModel
     private lateinit var optionsDelegate: PlayerOptionsDelegate
     lateinit var bookmarkListDelegate: BookmarkListDelegate
 
@@ -369,7 +369,7 @@ class AudioPlayer : Fragment(), PlaylistAdapter.IPlayer, TextWatcher, IAudioPlay
         super.onDestroy()
     }
 
-    fun setBottomMargin() {
+    override fun setBottomMargin() {
         (binding.playPause.layoutParams as? ConstraintLayout.LayoutParams)?.let {
             val audioPlayerContainerActivity = (requireActivity() as AudioPlayerContainerActivity)
             if (audioPlayerContainerActivity is MainActivity && !audioPlayerContainerActivity.isTablet()) it.bottomMargin = 8.dp + audioPlayerContainerActivity.bottomInset
@@ -768,7 +768,7 @@ class AudioPlayer : Fragment(), PlaylistAdapter.IPlayer, TextWatcher, IAudioPlay
         }
     }
 
-    fun onPlayPauseClick(@Suppress("UNUSED_PARAMETER") view: View?) {
+    override fun onPlayPauseClick(@Suppress("UNUSED_PARAMETER") view: View?) {
         if (playlistModel.service?.isPausable == false) {
             UiTools.snackerConfirm(requireActivity(), getString(R.string.stop_unpaubale), true) {
                 playlistModel.stop()
@@ -778,18 +778,18 @@ class AudioPlayer : Fragment(), PlaylistAdapter.IPlayer, TextWatcher, IAudioPlay
         playlistModel.togglePlayPause()
     }
 
-    fun onStopClick(@Suppress("UNUSED_PARAMETER") view: View?): Boolean {
+    override fun onStopClick(@Suppress("UNUSED_PARAMETER") view: View?): Boolean {
         playlistModel.stop()
         if (activity is AudioPlayerContainerActivity)
             (activity as AudioPlayerContainerActivity).closeMiniPlayer()
         return true
     }
 
-    fun onNextClick(@Suppress("UNUSED_PARAMETER") view: View?) {
+    override fun onNextClick(@Suppress("UNUSED_PARAMETER") view: View?) {
         if (!playlistModel.next()) UiTools.snacker(requireActivity(), R.string.lastsong, true)
     }
 
-    fun onPreviousClick(@Suppress("UNUSED_PARAMETER") view: View?) {
+    override fun onPreviousClick(@Suppress("UNUSED_PARAMETER") view: View?) {
         if (!playlistModel.previous()) UiTools.snacker(requireActivity(),  R.string.firstsong)
     }
 
@@ -812,7 +812,7 @@ class AudioPlayer : Fragment(), PlaylistAdapter.IPlayer, TextWatcher, IAudioPlay
         updateShuffleMode()
     }
 
-    fun onResumeToVideoClick() {
+    override fun onResumeToVideoClick() {
         playlistModel.currentMediaWrapper?.let {
             if (PlaybackService.hasRenderer()) VideoPlayerActivity.startOpened(requireActivity(),
                     it.uri, playlistModel.currentMediaPosition)
@@ -823,7 +823,7 @@ class AudioPlayer : Fragment(), PlaylistAdapter.IPlayer, TextWatcher, IAudioPlay
         }
     }
 
-    fun showAdvancedOptions(@Suppress("UNUSED_PARAMETER") v: View?) {
+    override fun showAdvancedOptions(@Suppress("UNUSED_PARAMETER") v: View?) {
         if (!isVisible) return
         if (!this::optionsDelegate.isInitialized) {
             val service = playlistModel.service ?: return
@@ -839,7 +839,7 @@ class AudioPlayer : Fragment(), PlaylistAdapter.IPlayer, TextWatcher, IAudioPlay
     /**
      * Show bookmark and initialize the delegate if needed
      */
-    fun showBookmarks() {
+    override fun showBookmarks() {
         val service = playlistModel.service ?: return
         if (!this::bookmarkListDelegate.isInitialized) {
             bookmarkListDelegate = BookmarkListDelegate(requireActivity(), service, bookmarkModel, false)
@@ -890,7 +890,7 @@ class AudioPlayer : Fragment(), PlaylistAdapter.IPlayer, TextWatcher, IAudioPlay
         return clearSearch()
     }
 
-    fun areBookmarksVisible() = ::bookmarkListDelegate.isInitialized && bookmarkListDelegate.visible
+    override fun areBookmarksVisible() = ::bookmarkListDelegate.isInitialized && bookmarkListDelegate.visible
 
     fun clearSearch(): Boolean {
         if (this::playlistModel.isInitialized) playlistModel.filter(null)
@@ -981,7 +981,7 @@ class AudioPlayer : Fragment(), PlaylistAdapter.IPlayer, TextWatcher, IAudioPlay
         activity?.showTipViewIfNeeded(R.id.audio_playlist_tips, PREF_PLAYLIST_TIPS_SHOWN)
     }
 
-    fun onStateChanged(newState: Int) {
+    override fun onStateChanged(newState: Int) {
         playerState = newState
         when (newState) {
             BottomSheetBehavior.STATE_COLLAPSED -> {
