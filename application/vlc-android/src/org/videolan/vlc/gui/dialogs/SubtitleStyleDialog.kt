@@ -58,7 +58,8 @@ class SubtitleStyleDialog : VLCBottomSheetDialogFragment() {
     /** Set while the widgets are updated from code, to ignore the listeners they trigger */
     private var updating = false
 
-    override fun getDefaultState(): Int = BottomSheetBehavior.STATE_EXPANDED
+    // Opens low on the screen so the video, and the real subtitles moving, stay visible above the panel
+    override fun getDefaultState(): Int = BottomSheetBehavior.STATE_HALF_EXPANDED
 
     // The panel does not depend on the orientation and must not be re-shown (it would count as a close)
     override fun needToManageOrientation(): Boolean = false
@@ -129,6 +130,12 @@ class SubtitleStyleDialog : VLCBottomSheetDialogFragment() {
 
     override fun onStart() {
         super.onStart()
+        dialog?.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)?.let {
+            BottomSheetBehavior.from(it).apply {
+                isFitToContents = false
+                halfExpandedRatio = HALF_EXPANDED_RATIO
+            }
+        }
         // The video behind must stay visible to judge the position
         dialog?.window?.apply {
             clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
@@ -259,6 +266,9 @@ class SubtitleStyleDialog : VLCBottomSheetDialogFragment() {
         private const val STATE_STYLE_CHANGED = "style_changed"
         private const val POSITION_STEPS = 500
         private const val MIN_OPACITY = 50
+
+        /** Fraction of the screen height the panel covers when it first opens (the user can drag it up) */
+        private const val HALF_EXPANDED_RATIO = 0.4f
 
         private val SWATCHES = intArrayOf(
             SubtitleStyle.WHITE,

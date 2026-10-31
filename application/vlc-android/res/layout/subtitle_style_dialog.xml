@@ -42,6 +42,24 @@
                 android:layout_marginTop="8dp"
                 android:contentDescription="@string/subtitle_style_preview" />
 
+        <TextView
+                style="@style/TextAppearance.AppCompat.Subhead"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="@string/subtitle_position" />
+
+        <SeekBar
+                android:id="@+id/subtitle_style_position"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+        <TextView
+                style="@style/TextAppearance.AppCompat.Caption"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/subtitle_position_hint" />
+
         <HorizontalScrollView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -136,24 +154,6 @@
                 android:layout_height="wrap_content"
                 android:minHeight="48dp"
                 android:text="@string/subtitles_shadow_title" />
-
-        <TextView
-                style="@style/TextAppearance.AppCompat.Subhead"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:text="@string/subtitle_position" />
-
-        <SeekBar
-                android:id="@+id/subtitle_style_position"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
-
-        <TextView
-                style="@style/TextAppearance.AppCompat.Caption"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/subtitle_position_hint" />
 
         <TextView
                 style="@style/TextAppearance.AppCompat.Caption"
