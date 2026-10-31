@@ -48,7 +48,9 @@ VLC plays every file you throw at it, but a few everyday things always felt roug
 &nbsp;
 <img src="docs/screenshots/subtitle-position-raised.png" alt="Red subtitles on a background box, lifted to the middle of the screen" width="400">
 
-*Yellow on a box at the default spot, then red and lifted to the middle of the screen. Colour, background and position are all changed from inside the player.*
+<img src="docs/screenshots/subtitle-panel.png" alt="The subtitle style panel: live preview, position slider and presets" width="400">
+
+*Yellow on a box at the default spot, then red and lifted to the middle of the screen. Colour, background and position are all changed from the panel above, from inside the player.*
 
 </div>
 
