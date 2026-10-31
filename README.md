@@ -44,13 +44,11 @@ VLC plays every file you throw at it, but a few everyday things always felt roug
 
 <div align="center">
 
-<img src="docs/screenshots/subtitle-topgun-default.png" alt="Default subtitles" width="400">
+<img src="docs/screenshots/subtitle-position-default.png" alt="Yellow subtitles on a background box at the default position" width="400">
 &nbsp;
-<img src="docs/screenshots/subtitle-topgun-yellow-box.png" alt="The same scene with the Yellow with background preset" width="400">
+<img src="docs/screenshots/subtitle-position-raised.png" alt="Red subtitles on a background box, lifted to the middle of the screen" width="400">
 
-<img src="docs/screenshots/subtitle-panel.png" alt="The in-player subtitle style panel with presets" width="400">
-
-*Default look, the Yellow with background preset, and the panel that changes it, all from inside the player.*
+*Yellow on a box at the default spot, then red and lifted to the middle of the screen. Colour, background and position are all changed from inside the player.*
 
 </div>
 
