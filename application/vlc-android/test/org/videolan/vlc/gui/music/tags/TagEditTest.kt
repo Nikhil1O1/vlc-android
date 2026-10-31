@@ -34,3 +34,12 @@ class TagEditTest {
         assertEquals("", yearFromDate("unknown"))
     }
 }
+
+class TagReadTest {
+    @Test fun nullPlaceholderFromTagLibIsEmpty() {
+        val map = mapOf("DISCNUMBER" to arrayOf("(null)/(null)"), "TITLE" to arrayOf("Hi"))
+        assertEquals("", map.first("DISCNUMBER"))
+        assertEquals("Hi", map.first("TITLE"))
+        assertEquals("", map.first("MISSING"))
+    }
+}

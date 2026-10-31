@@ -50,7 +50,8 @@ sealed class CoverEdit {
 }
 
 /** Tag property names read for the editor form. */
-fun Map<String, Array<String>>.first(key: String): String = this[key]?.firstOrNull().orEmpty()
+fun Map<String, Array<String>>.first(key: String): String =
+    this[key]?.firstOrNull()?.takeUnless { it.contains("(null)") }.orEmpty()
 
 /** Four-digit year from a TagLib DATE value such as "1994", "1994-05-02". */
 fun yearFromDate(date: String): String = Regex("""^\d{4}""").find(date.trim())?.value.orEmpty()

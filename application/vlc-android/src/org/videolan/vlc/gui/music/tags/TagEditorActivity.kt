@@ -220,6 +220,7 @@ class TagEditorActivity : AppCompatActivity() {
         val problem = build().validate()
         Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             if (albumMode) Text(stringResource(R.string.tag_editor_album_hint, count), style = MaterialTheme.typography.bodyMedium)
+            if (!albumMode) targets?.firstOrNull()?.let { Text(it.file.name, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
                 val model: Any? = when (cover) {
                     CoverEdit.Remove -> null
