@@ -385,6 +385,8 @@ open class AudioPlayerContainerActivity : BaseActivity(), KeycodeListener, Sched
             // That why we wait that the layout has been done to perform this. See https://code.videolan.org/videolan/vlc-android/-/issues/2241#note_291050
             audioPlayer.showCover(settings.getBoolean(KEY_AUDIO_PLAYER_SHOW_COVER, false))
             if (playerBehavior.state == STATE_COLLAPSED) audioPlayer.onSlide(0f)
+            // After a rotation the sheet is restored expanded without any slide event, so tell the player it is fully open.
+            else if (playerBehavior.state == STATE_EXPANDED) audioPlayer.onSlide(1f)
         }
         playerBehavior.addBottomSheetCallback(object : BottomSheetCallback() {
             override fun onSlide(bottomSheet: View, slideOffset: Float) {

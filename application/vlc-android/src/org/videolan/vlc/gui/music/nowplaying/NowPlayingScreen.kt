@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.shape.CircleShape
 import org.videolan.vlc.gui.music.visualizer.RING_COVER_FRACTION
 import org.videolan.vlc.gui.music.visualizer.VisualizerStrip
@@ -21,6 +22,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -118,9 +120,11 @@ private fun MiniPlayer(state: NowPlayingUiState, actions: NowPlayingActions, mod
 @Composable
 private fun FullPlayer(state: NowPlayingUiState, actions: NowPlayingActions, modifier: Modifier = Modifier) {
     var showQueue by remember { mutableStateOf(false) }
-    val style = state.style
     val scheme = MaterialTheme.colorScheme
-    Box(modifier.fillMaxSize()) {
+    BoxWithConstraints(modifier.fillMaxSize()) {
+        // Landscape / wide screens: cover on the left, controls on the right. The full-bleed style needs portrait.
+        val landscape = maxWidth > maxHeight
+        val style = if (landscape && state.style == NowPlayingStyle.FullCover) NowPlayingStyle.Normal else state.style
         // ---- background ----
         when (style) {
             NowPlayingStyle.Expressive -> {
@@ -137,47 +141,68 @@ private fun FullPlayer(state: NowPlayingUiState, actions: NowPlayingActions, mod
         val vis = if (style == NowPlayingStyle.FullCover && state.visualizer.let { it == VisualizerStyle.Ring || it == VisualizerStyle.Glow }) VisualizerStyle.Bars else state.visualizer
         val frame = rememberVisualizerFrame(enabled = vis != VisualizerStyle.Off && state.playing)
         val accent = scheme.primary
+        val corner = if (style == NowPlayingStyle.Expressive) 36 else 24
 
-        // ---- full-bleed cover for the Full cover style ----
-        if (style == NowPlayingStyle.FullCover) {
-            Box(Modifier.fillMaxWidth().fillMaxHeight(0.68f)) {
-                CoverPager(state, actions, Modifier.fillMaxSize(), corner = 0, spacing = 0)
-                Box(
-                    Modifier.fillMaxSize().background(
-                        Brush.verticalGradient(0.55f to Color.Transparent, 1f to scheme.surfaceContainer)
-                    )
-                )
+        // The cover, optionally with the ring/glow visualizer around it. [square] sizes the outer square.
+        val coverBlock: @Composable (Modifier) -> Unit = { square ->
+            if (vis == VisualizerStyle.Ring || vis == VisualizerStyle.Glow) {
+                val fraction = if (vis == VisualizerStyle.Ring) RING_COVER_FRACTION else 0.86f
+                Box(square.coverVisualizer(vis, frame, accent), contentAlignment = Alignment.Center) {
+                    val shape = if (vis == VisualizerStyle.Ring) CircleShape else RoundedCornerShape(corner.dp)
+                    CoverPager(state, actions, Modifier.fillMaxWidth(fraction).aspectRatio(1f).clip(shape), corner = if (vis == VisualizerStyle.Ring) 0 else corner)
+                }
+            } else {
+                CoverPager(state, actions, square.clip(RoundedCornerShape(corner.dp)), corner = corner)
             }
         }
 
-        Column(Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 24.dp, vertical = 8.dp)) {
-            Header(state, actions)
-            when (style) {
-                NowPlayingStyle.FullCover -> Spacer(Modifier.weight(1f))
-                else -> {
-                    Spacer(Modifier.weight(0.25f))
-                    val corner = if (style == NowPlayingStyle.Expressive) 36 else 24
-                    if (vis == VisualizerStyle.Ring || vis == VisualizerStyle.Glow) {
-                        val fraction = if (vis == VisualizerStyle.Ring) RING_COVER_FRACTION else 0.86f
-                        Box(Modifier.fillMaxWidth().aspectRatio(1f).coverVisualizer(vis, frame, accent), contentAlignment = Alignment.Center) {
-                            val shape = if (vis == VisualizerStyle.Ring) CircleShape else RoundedCornerShape(corner.dp)
-                            CoverPager(state, actions, Modifier.fillMaxWidth(fraction).aspectRatio(1f).clip(shape), corner = if (vis == VisualizerStyle.Ring) 0 else corner)
-                        }
-                    } else {
-                        CoverPager(state, actions, Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(corner.dp)), corner = corner)
-                    }
-                    Spacer(Modifier.weight(0.25f))
+        if (landscape) {
+            Row(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(horizontal = 24.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(32.dp)) {
+                Box(Modifier.weight(1f).fillMaxHeight().padding(vertical = 4.dp), contentAlignment = Alignment.Center) {
+                    coverBlock(Modifier.aspectRatio(1f))
+                }
+                Column(Modifier.weight(1f).fillMaxHeight()) {
+                    Header(state, actions)
+                    Spacer(Modifier.weight(1f))
+                    if (vis == VisualizerStyle.Bars || vis == VisualizerStyle.Wave) VisualizerStrip(vis, frame, accent, Modifier.height(28.dp))
+                    InfoRow(state, actions, centered = style == NowPlayingStyle.Gradient)
+                    Seek(state, actions)
+                    Transport(state, actions)
+                    Spacer(Modifier.height(8.dp))
+                    Chips(state, actions, onQueue = { showQueue = true })
+                    Spacer(Modifier.weight(0.4f))
                 }
             }
-            if (vis == VisualizerStyle.Bars || vis == VisualizerStyle.Wave) VisualizerStrip(vis, frame, accent)
-            InfoRow(state, actions, centered = style == NowPlayingStyle.Gradient)
-            Spacer(Modifier.height(12.dp))
-            Seek(state, actions)
-            Spacer(Modifier.height(8.dp))
-            Transport(state, actions)
-            Spacer(Modifier.height(20.dp))
-            Chips(state, actions, onQueue = { showQueue = true })
-            Spacer(Modifier.height(12.dp))
+        } else {
+            // ---- full-bleed cover for the Full cover style ----
+            if (style == NowPlayingStyle.FullCover) {
+                Box(Modifier.fillMaxWidth().fillMaxHeight(0.68f)) {
+                    CoverPager(state, actions, Modifier.fillMaxSize(), corner = 0, spacing = 0)
+                    Box(
+                        Modifier.fillMaxSize().background(
+                            Brush.verticalGradient(0.55f to Color.Transparent, 1f to scheme.surfaceContainer)
+                        )
+                    )
+                }
+            }
+            Column(Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 24.dp, vertical = 8.dp)) {
+                Header(state, actions)
+                if (style == NowPlayingStyle.FullCover) Spacer(Modifier.weight(1f))
+                else {
+                    Spacer(Modifier.weight(0.25f))
+                    coverBlock(Modifier.fillMaxWidth().aspectRatio(1f))
+                    Spacer(Modifier.weight(0.25f))
+                }
+                if (vis == VisualizerStyle.Bars || vis == VisualizerStyle.Wave) VisualizerStrip(vis, frame, accent)
+                InfoRow(state, actions, centered = style == NowPlayingStyle.Gradient)
+                Spacer(Modifier.height(12.dp))
+                Seek(state, actions)
+                Spacer(Modifier.height(8.dp))
+                Transport(state, actions)
+                Spacer(Modifier.height(20.dp))
+                Chips(state, actions, onQueue = { showQueue = true })
+                Spacer(Modifier.height(12.dp))
+            }
         }
     }
     if (showQueue) QueueSheet(state, actions, onDismiss = { showQueue = false })

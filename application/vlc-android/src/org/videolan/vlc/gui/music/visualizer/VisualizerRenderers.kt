@@ -49,8 +49,8 @@ fun rememberVisualizerFrame(enabled: Boolean): State<VisualizerFrame?> {
 
 /** Bars or waveform strip shown between the cover and the title. */
 @Composable
-fun VisualizerStrip(style: VisualizerStyle, frame: State<VisualizerFrame?>, color: Color, modifier: Modifier = Modifier) {
-    Box(modifier.fillMaxWidth().height(64.dp).drawBehind {
+fun VisualizerStrip(style: VisualizerStyle, frame: State<VisualizerFrame?>, color: Color, modifier: Modifier = Modifier.height(64.dp)) {
+    Box(modifier.fillMaxWidth().drawBehind {
         val f = frame.value ?: return@drawBehind
         if (style == VisualizerStyle.Wave) drawWave(f.waveform, color) else drawBars(f.bands, color)
     })
